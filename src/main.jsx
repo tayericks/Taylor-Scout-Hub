@@ -214,21 +214,14 @@ function Dashboard({ show, onBack }) {
     locations: Array.isArray(show.locationLibrary) ? show.locationLibrary.length : 0,
   }), [show]);
 
-  function openTool(app) {
+  function toolUrl(app) {
     let url = envUrl(app.env, app.fallback);
-    if (!url) return;
+    if (!url) return '';
 
-    // Scout Route must always open the dedicated Scout Route app.
-    // This protects against an accidentally misconfigured Vercel environment
-    // variable that points back to the Taylor Scout Hub.
     if (app.key === 'scout') {
-      try {
-        const configuredTarget = new URL(url, window.location.origin);
-        const hubHosts = new Set([window.location.hostname, 'taylorscout.com', 'www.taylorscout.com']);
-        if (hubHosts.has(configuredTarget.hostname)) url = app.fallback;
-      } catch {
-        url = app.fallback;
-      }
+      // Scout Route is always an absolute link to its own app domain.
+      // Never allow a bad environment variable to point back to the Hub.
+      url = 'https://app.taylorscout.com';
     }
 
     const target = new URL(url, window.location.origin);
@@ -236,7 +229,7 @@ function Dashboard({ show, onBack }) {
     target.searchParams.set('showId', show.id);
     target.searchParams.set('showName', show.name || '');
     target.searchParams.set('fromHub', '1');
-    window.location.assign(target.toString());
+    return target.toString();
   }
 
   return <main className="page dashboard-page">
@@ -257,11 +250,15 @@ function Dashboard({ show, onBack }) {
     <section className="app-grid">
       {APPS.map(app => {
         const Icon = app.icon; const url = envUrl(app.env, app.fallback); const enabled = Boolean(url);
-        return <button key={app.key} className={`app-card ${enabled ? '' : 'disabled'}`} onClick={()=>openTool(app)} disabled={!enabled}>
+        const href = enabled ? toolUrl(app) : '';
+        return enabled ? <a key={app.key} className="app-card" href={href}>
           <span className={`app-icon ${app.key}`}><Icon size={27}/></span>
-          <div><h3>{app.title}</h3><p>{app.description}</p><small>{enabled ? app.status : app.status}</small></div>
-          {enabled && <ChevronRight className="chev"/>}
-        </button>;
+          <div><h3>{app.title}</h3><p>{app.description}</p><small>{app.status}</small></div>
+          <ChevronRight className="chev"/>
+        </a> : <div key={app.key} className="app-card disabled" aria-disabled="true">
+          <span className={`app-icon ${app.key}`}><Icon size={27}/></span>
+          <div><h3>{app.title}</h3><p>{app.description}</p><small>{app.status}</small></div>
+        </div>;
       })}
     </section>
 

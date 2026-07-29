@@ -19,3 +19,22 @@ export async function fetchShows() {
     updatedAt: row.updated_at,
   }));
 }
+
+
+export async function submitShowRequest(request) {
+  if (!configured) throw new Error('Supabase is not configured.');
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('You must be signed in.');
+  const { data, error } = await supabase.from('show_requests').insert({
+    requested_by: user.id,
+    requester_email: user.email || null,
+    show_name: request.showName.trim(),
+    season: request.season.trim() || null,
+    production_company: request.company.trim() || null,
+    requested_access: request.accessType,
+    notes: request.notes.trim() || null,
+    status: 'pending'
+  }).select().single();
+  if (error) throw error;
+  return data;
+}

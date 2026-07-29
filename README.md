@@ -38,3 +38,6 @@ Upload these files over the existing Hub repository root. Do not upload `node_mo
 ## Update 4.0.0
 - Unified Taylor Scout logo and dashboard navigation.
 - Interface and print refinements requested July 29, 2026.
+
+
+Build: v5

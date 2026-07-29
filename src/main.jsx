@@ -3,9 +3,9 @@ import { createRoot } from 'react-dom/client';
 import {
   Activity, ArrowLeft, BookOpen, CalendarDays, Check, ChevronRight, Clock3,
   DollarSign, FileText, Filter, ListChecks, LockKeyhole, LogOut, Map, MapPin,
-  Route, Search, ShieldCheck, SlidersHorizontal, Users, WalletCards, X
+  Route, Search, ShieldCheck, SlidersHorizontal, Users, WalletCards, X, Plus, Send
 } from 'lucide-react';
-import { configured, fetchShows, supabase } from './supabase';
+import { configured, fetchShows, submitShowRequest, supabase } from './supabase';
 import './styles.css';
 
 function TaylorScoutLogo({compact=false}) { return <span className={`ts-logo ${compact?'compact':''}`} aria-label="Taylor Scout"><svg viewBox="0 0 74 92" role="img" aria-hidden="true"><path className="pin-outline" d="M37 3C18 3 5 17 5 36c0 22 17 40 32 53 15-13 32-31 32-53C69 17 56 3 37 3Z"/><path className="mountain" d="M16 39l15-13 8 7 10-10 12 14-12-8-10 10-8-7-15 7Z"/><path className="road" d="M19 69c12-14 24-18 31-27-3 14-12 22-20 31l7 8-9 2-9-14Z"/><path className="star" d="M21 17l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"/></svg><span className="ts-wordmark"><b>TAYLOR SCOUT</b><small>PRODUCTION TOOLS</small></span></span> }
@@ -112,14 +112,48 @@ function Header({ show, onHome, onSignOut }) {
   </header>;
 }
 
+function RequestShowModal({ onClose }) {
+  const [form, setForm] = useState({ showName:'', season:'', company:'', accessType:'Production workspace', notes:'' });
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const [complete, setComplete] = useState(false);
+  const update = (field, value) => setForm(current => ({ ...current, [field]: value }));
+  async function submit(e) {
+    e.preventDefault();
+    if (!form.showName.trim()) return setMessage('Enter the show name.');
+    setBusy(true); setMessage('');
+    try {
+      await submitShowRequest(form);
+      setComplete(true);
+    } catch (error) {
+      const text = String(error?.message || error);
+      setMessage(text.includes('show_requests') ? 'The request table has not been installed yet. Run the included Supabase migration, then submit again.' : text);
+    } finally { setBusy(false); }
+  }
+  return <div className="modal-backdrop" onMouseDown={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+    <section className="request-modal" role="dialog" aria-modal="true" aria-label="Request a new show">
+      <header className="modal-header"><div><p className="eyebrow">NEW PRODUCTION</p><h2>Request a new show</h2><p>New productions require approval before a workspace is created. This keeps access controlled and supports future paid plans.</p></div><button className="icon-button" onClick={onClose}><X size={18}/></button></header>
+      {complete ? <div className="request-complete"><Check size={30}/><h3>Request submitted</h3><p>Your request is pending approval. The show will appear under Your Shows after it is approved and activated.</p><button className="primary" onClick={onClose}>Done</button></div> : <form className="request-form" onSubmit={submit}>
+        <label>Show name<input autoFocus value={form.showName} onChange={e=>update('showName',e.target.value)} placeholder="Example: El Dorado" required/></label>
+        <div className="request-grid"><label>Season<input value={form.season} onChange={e=>update('season',e.target.value)} placeholder="Season 3"/></label><label>Production company<input value={form.company} onChange={e=>update('company',e.target.value)} placeholder="Studio or production company"/></label></div>
+        <label>Access requested<select value={form.accessType} onChange={e=>update('accessType',e.target.value)}><option>Production workspace</option><option>Trial / evaluation</option><option>Additional show under current account</option></select></label>
+        <label>Notes<textarea value={form.notes} onChange={e=>update('notes',e.target.value)} placeholder="Expected start date, team size, or anything needed for approval." rows="4"/></label>
+        {message && <div className="message">{message}</div>}
+        <footer className="request-actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button className="primary" disabled={busy}><Send size={16}/>{busy?'Submitting…':'Submit request'}</button></footer>
+      </form>}
+    </section>
+  </div>;
+}
+
 function Shows({ shows, loading, onOpen }) {
   const [query, setQuery] = useState('');
+  const [requestOpen, setRequestOpen] = useState(false);
   const filtered = shows.filter(show => `${show.name} ${show.season || ''} ${show.company || ''}`.toLowerCase().includes(query.toLowerCase()));
   return <main className="page">
     <div className="page-heading"><div><p className="eyebrow">PRODUCTIONS</p><h1>Your Shows</h1><p>Select a show to open its connected production workspace.</p></div>
-      <label className="search-box"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search shows"/></label>
+      <div className="shows-heading-actions"><label className="search-box"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search shows"/></label><button className="primary request-show-button" onClick={()=>setRequestOpen(true)}><Plus size={16}/> Request New Show</button></div>
     </div>
-    {loading ? <div className="empty">Loading shows…</div> : shows.length === 0 ? <div className="empty"><h2>No shows available</h2><p>Create your first show in Scout Route. It will appear here automatically.</p><a className="primary link" href={envUrl('VITE_SCOUT_ROUTE_URL','https://app.taylorscout.com')}>Open Scout Route</a></div> :
+    {loading ? <div className="empty">Loading shows…</div> : shows.length === 0 ? <div className="empty"><h2>No shows available</h2><p>Request access to create your first production workspace.</p><button className="primary" onClick={()=>setRequestOpen(true)}>Request New Show</button></div> :
       <div className="show-list">{filtered.map(show => {
         const episodes = Array.isArray(show.episodes) ? show.episodes.length : 0;
         const itineraries = Array.isArray(show.itineraries) ? show.itineraries.length : 0;
@@ -132,6 +166,7 @@ function Shows({ shows, loading, onOpen }) {
           <ChevronRight className="chev"/>
         </button>;
       })}</div>}
+    {requestOpen && <RequestShowModal onClose={()=>setRequestOpen(false)}/>}
   </main>;
 }
 

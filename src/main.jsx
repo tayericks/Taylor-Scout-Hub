@@ -229,6 +229,7 @@ function Dashboard({ show, onBack }) {
     target.searchParams.set('showId', show.id);
     target.searchParams.set('showName', show.name || '');
     target.searchParams.set('fromHub', '1');
+    if (app.key === 'scout') target.searchParams.set('tool', 'scout-route');
     return target.toString();
   }
 

@@ -41,3 +41,6 @@ Upload these files over the existing Hub repository root. Do not upload `node_mo
 
 
 Build: v5
+
+## Shared subdomain authentication
+This build stores the Supabase session in chunked cookies scoped to `.taylorscout.com`, while retaining localStorage as a fallback. After deploying, refresh the Hub once while signed in (or sign out and back in) so the existing session is migrated for the other Taylor Scout subdomains.

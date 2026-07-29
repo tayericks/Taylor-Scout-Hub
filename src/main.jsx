@@ -1,38 +1,66 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
-  ArrowLeft, BookOpen, Calculator, ChevronRight, Clock3, LogOut,
-  Map, MapPin, Route, ShieldCheck, Users, WalletCards
+  Activity, ArrowLeft, BookOpen, CalendarDays, Check, ChevronRight, Clock3,
+  DollarSign, FileText, Filter, ListChecks, LockKeyhole, LogOut, Map, MapPin,
+  Route, Search, ShieldCheck, SlidersHorizontal, Users, WalletCards, X
 } from 'lucide-react';
 import { configured, fetchShows, supabase } from './supabase';
 import './styles.css';
 
 const APPS = [
   {
+    key: 'calendar', title: 'Prep / Wrap Calendar', icon: CalendarDays,
+    description: 'Schedule episodes, units, sets, keys, prep, hold, shoot, and strike dates.',
+    env: 'VITE_CALENDAR_URL', fallback: 'https://calendar.taylorscout.com', status: 'Open tool'
+  },
+  {
     key: 'scout', title: 'Scout Route', icon: Route,
     description: 'Build, optimize, print, and share scout itineraries.',
     env: 'VITE_SCOUT_ROUTE_URL', fallback: 'https://app.taylorscout.com', status: 'Open tool'
   },
   {
+    key: 'locations', title: 'Location List', icon: ListChecks,
+    description: 'Track candidate locations and maintain the final connected locations list.',
+    env: 'VITE_LOCATION_LIST_URL', fallback: '', status: 'Coming soon'
+  },
+  {
     key: 'budget', title: 'Budget', icon: WalletCards,
-    description: 'Create episode and set budgets, estimates, POs, and actuals.',
-    env: 'VITE_BUDGET_URL', fallback: '', status: 'Connect app'
+    description: 'Create episode and set budgets, estimates, POs, commitments, and actuals.',
+    env: 'VITE_BUDGET_URL', fallback: 'https://budget.taylorscout.com', status: 'Open tool'
+  },
+  {
+    key: 'bible', title: 'Location Bible', icon: BookOpen,
+    description: 'Run vendor orders, contacts, permits, schedules, and closer logistics.',
+    env: 'VITE_BIBLE_URL', fallback: 'https://bible.taylorscout.com', status: 'Open tool'
   },
   {
     key: 'waypoint', title: 'Waypoint', icon: Map,
     description: 'Create professional logistics maps and set schematics.',
-    env: 'VITE_WAYPOINT_URL', fallback: '', status: 'Connect app'
-  },
-  {
-    key: 'bible', title: 'Location Bible', icon: BookOpen,
-    description: 'Centralize locations, contacts, vendors, parking, access, and permits.',
-    env: 'VITE_BIBLE_URL', fallback: '', status: 'Coming soon'
+    env: 'VITE_WAYPOINT_URL', fallback: '', status: 'Coming soon'
   }
+];
+
+const ROLE_TEMPLATES = {
+  owner: { label: 'Owner', description: 'Full show, tool, team, and financial access.' },
+  manager: { label: 'Location Manager', description: 'Full operations access without ownership transfer.' },
+  key: { label: 'Key Assistant', description: 'Assigned locations, calendars, Bibles, and maps.' },
+  scout: { label: 'Scout', description: 'Scout Route and candidate-location tracker access.' },
+  accounting: { label: 'Accounting', description: 'Budget and actuals access only.' },
+  viewer: { label: 'Viewer', description: 'Read-only access to approved material.' }
+};
+
+const DEFAULT_PERMISSION_ROWS = [
+  { id: 'owner', name: 'Show Owner', email: 'Owner account', role: 'owner', scope: 'All locations', calendar: 'Edit', scout: 'Edit', locations: 'Edit', budget: 'Full', bible: 'Edit', waypoint: 'Edit', invite: true },
+  { id: 'key', name: 'Key Assistant', email: 'Template', role: 'key', scope: 'Assigned only', calendar: 'Edit', scout: 'View', locations: 'Assigned', budget: 'Totals only', bible: 'Edit', waypoint: 'Edit', invite: false },
+  { id: 'scout', name: 'Scout', email: 'Template', role: 'scout', scope: 'Assigned episodes', calendar: 'View', scout: 'Edit', locations: 'Scout tracker', budget: 'None', bible: 'None', waypoint: 'View', invite: false }
 ];
 
 function envUrl(name, fallback) {
   const map = {
+    VITE_CALENDAR_URL: import.meta.env.VITE_CALENDAR_URL,
     VITE_SCOUT_ROUTE_URL: import.meta.env.VITE_SCOUT_ROUTE_URL,
+    VITE_LOCATION_LIST_URL: import.meta.env.VITE_LOCATION_LIST_URL,
     VITE_BUDGET_URL: import.meta.env.VITE_BUDGET_URL,
     VITE_WAYPOINT_URL: import.meta.env.VITE_WAYPOINT_URL,
     VITE_BIBLE_URL: import.meta.env.VITE_BIBLE_URL,
@@ -83,10 +111,14 @@ function Header({ show, onHome, onSignOut }) {
 }
 
 function Shows({ shows, loading, onOpen }) {
+  const [query, setQuery] = useState('');
+  const filtered = shows.filter(show => `${show.name} ${show.season || ''} ${show.company || ''}`.toLowerCase().includes(query.toLowerCase()));
   return <main className="page">
-    <div className="page-heading"><div><p className="eyebrow">PRODUCTIONS</p><h1>Your Shows</h1><p>Select a show to open its connected production workspace.</p></div></div>
+    <div className="page-heading"><div><p className="eyebrow">PRODUCTIONS</p><h1>Your Shows</h1><p>Select a show to open its connected production workspace.</p></div>
+      <label className="search-box"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search shows"/></label>
+    </div>
     {loading ? <div className="empty">Loading shows…</div> : shows.length === 0 ? <div className="empty"><h2>No shows available</h2><p>Create your first show in Scout Route. It will appear here automatically.</p><a className="primary link" href={envUrl('VITE_SCOUT_ROUTE_URL','https://app.taylorscout.com')}>Open Scout Route</a></div> :
-      <div className="show-list">{shows.map(show => {
+      <div className="show-list">{filtered.map(show => {
         const episodes = Array.isArray(show.episodes) ? show.episodes.length : 0;
         const itineraries = Array.isArray(show.itineraries) ? show.itineraries.length : 0;
         const locations = Array.isArray(show.locationLibrary) ? show.locationLibrary.length : 0;
@@ -101,7 +133,44 @@ function Shows({ shows, loading, onOpen }) {
   </main>;
 }
 
+function PermissionsModal({ show, onClose }) {
+  const storageKey = `taylor-scout-permissions-${show.id}`;
+  const [rows, setRows] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(storageKey)) || DEFAULT_PERMISSION_ROWS; }
+    catch { return DEFAULT_PERMISSION_ROWS; }
+  });
+  const [saved, setSaved] = useState(false);
+
+  function updateRow(id, field, value) {
+    setRows(current => current.map(row => row.id === id ? { ...row, [field]: value } : row));
+    setSaved(false);
+  }
+  function save() {
+    localStorage.setItem(storageKey, JSON.stringify(rows));
+    setSaved(true);
+  }
+  return <div className="modal-backdrop" role="presentation" onMouseDown={e=>{ if (e.target === e.currentTarget) onClose(); }}>
+    <section className="permissions-modal" role="dialog" aria-modal="true" aria-label="Team and permissions">
+      <header className="modal-header"><div><p className="eyebrow">{show.name}</p><h2>Team & Permissions</h2><p>Prototype permission planning. Database enforcement will be added with shared Supabase tables.</p></div><button className="icon-button" onClick={onClose}><X size={18}/></button></header>
+      <div className="template-row">{Object.entries(ROLE_TEMPLATES).map(([key, role]) => <div key={key} className="template-chip"><b>{role.label}</b><small>{role.description}</small></div>)}</div>
+      <div className="permission-table-wrap">
+        <table className="permission-table">
+          <thead><tr><th>Teammate</th><th>Scope</th><th>Calendar</th><th>Scout Route</th><th>Location List</th><th>Budget</th><th>Bible</th><th>Waypoint</th><th>Invite</th></tr></thead>
+          <tbody>{rows.map(row => <tr key={row.id}>
+            <td><b>{row.name}</b><small>{row.email}</small></td>
+            <td><select value={row.scope} onChange={e=>updateRow(row.id,'scope',e.target.value)}><option>All locations</option><option>Assigned only</option><option>Assigned episodes</option><option>Specific locations</option></select></td>
+            {['calendar','scout','locations','budget','bible','waypoint'].map(field => <td key={field}><select value={row[field]} onChange={e=>updateRow(row.id,field,e.target.value)}><option>None</option><option>View</option><option>Edit</option><option>Assigned</option><option>Scout tracker</option><option>Totals only</option><option>Full</option></select></td>)}
+            <td><label className="switch-row"><input type="checkbox" checked={row.invite} onChange={e=>updateRow(row.id,'invite',e.target.checked)}/><span>{row.invite ? 'Yes' : 'No'}</span></label></td>
+          </tr>)}</tbody>
+        </table>
+      </div>
+      <footer className="modal-footer"><span>{saved ? <><Check size={15}/> Saved locally</> : 'No live permissions changed'}</span><div><button className="secondary" onClick={onClose}>Close</button><button className="primary" onClick={save}>Save prototype</button></div></footer>
+    </section>
+  </div>;
+}
+
 function Dashboard({ show, onBack }) {
+  const [permissionsOpen, setPermissionsOpen] = useState(false);
   const counts = useMemo(() => ({
     episodes: Array.isArray(show.episodes) ? show.episodes.length : 0,
     itineraries: Array.isArray(show.itineraries) ? show.itineraries.length : 0,
@@ -113,15 +182,22 @@ function Dashboard({ show, onBack }) {
     if (!url) return;
     const target = new URL(url, window.location.origin);
     target.searchParams.set('show', show.id);
+    target.searchParams.set('showName', show.name || '');
     window.location.href = target.toString();
   }
 
   return <main className="page dashboard-page">
-    <button className="back" onClick={onBack}><ArrowLeft size={17}/> All Shows</button>
+    <div className="dashboard-actions"><button className="back" onClick={onBack}><ArrowLeft size={17}/> All Shows</button><button className="secondary permissions-button" onClick={()=>setPermissionsOpen(true)}><LockKeyhole size={16}/> Team & Permissions</button></div>
     <section className="show-hero">
       <div className="hero-logo">{show.logo ? <img src={show.logo} alt=""/> : <MapPin size={34}/>}</div>
       <div><p className="eyebrow">{show.season || 'SHOW DASHBOARD'}</p><h1>{show.name}</h1><p>{show.company || show.productionOffice?.address || 'Connected production workspace'}</p></div>
       <div className="hero-stats"><span><b>{counts.episodes}</b> Episodes</span><span><b>{counts.itineraries}</b> Itineraries</span><span><b>{counts.locations}</b> Saved locations</span></div>
+    </section>
+
+    <section className="dashboard-summary">
+      <div className="summary-card"><CalendarDays size={19}/><span><b>Upcoming schedule</b><small>Open Calendar to manage prep, hold, shoot, and strike dates.</small></span></div>
+      <div className="summary-card"><ListChecks size={19}/><span><b>Location pipeline</b><small>Candidate tracking and final locations list are ready for the next build.</small></span></div>
+      <div className="summary-card"><DollarSign size={19}/><span><b>Financial privacy</b><small>Owner-controlled Budget access will support assigned-location views.</small></span></div>
     </section>
 
     <div className="section-title"><div><p className="eyebrow">TOOLS</p><h2>Production workspace</h2></div><div className="connected"><Users size={16}/> Shared show access</div></div>
@@ -137,9 +213,10 @@ function Dashboard({ show, onBack }) {
     </section>
 
     <section className="activity-strip">
-      <div><Clock3 size={18}/><span><b>One show record</b><small>Episodes, locations, and collaborators stay attached to {show.name}.</small></span></div>
-      <div><Calculator size={18}/><span><b>Connected over time</b><small>Budget, Waypoint, and Bible can share this show without replacing existing data.</small></span></div>
+      <div><Activity size={18}/><span><b>One show record</b><small>Calendar, locations, budgets, orders, and maps will share the same record IDs.</small></span></div>
+      <div><SlidersHorizontal size={18}/><span><b>Permission-aware tools</b><small>Owners control tool, episode, location, and financial visibility.</small></span></div>
     </section>
+    {permissionsOpen && <PermissionsModal show={show} onClose={()=>setPermissionsOpen(false)}/>} 
   </main>;
 }
 

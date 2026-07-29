@@ -215,12 +215,28 @@ function Dashboard({ show, onBack }) {
   }), [show]);
 
   function openTool(app) {
-    const url = envUrl(app.env, app.fallback);
+    let url = envUrl(app.env, app.fallback);
     if (!url) return;
+
+    // Scout Route must always open the dedicated Scout Route app.
+    // This protects against an accidentally misconfigured Vercel environment
+    // variable that points back to the Taylor Scout Hub.
+    if (app.key === 'scout') {
+      try {
+        const configuredTarget = new URL(url, window.location.origin);
+        const hubHosts = new Set([window.location.hostname, 'taylorscout.com', 'www.taylorscout.com']);
+        if (hubHosts.has(configuredTarget.hostname)) url = app.fallback;
+      } catch {
+        url = app.fallback;
+      }
+    }
+
     const target = new URL(url, window.location.origin);
     target.searchParams.set('show', show.id);
+    target.searchParams.set('showId', show.id);
     target.searchParams.set('showName', show.name || '');
-    window.location.href = target.toString();
+    target.searchParams.set('fromHub', '1');
+    window.location.assign(target.toString());
   }
 
   return <main className="page dashboard-page">

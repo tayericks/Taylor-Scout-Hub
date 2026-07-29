@@ -23,3 +23,19 @@
 .dashboard-page{padding-top:34px}.show-hero{display:flex!important;flex-direction:column;justify-content:center;align-items:center;text-align:center;min-height:210px;padding:30px 34px!important}.show-hero>div:nth-child(2){display:flex;flex-direction:column;align-items:center}.hero-logo{width:92px!important;height:92px!important;border-radius:16px!important}.show-hero h1{font-size:42px!important;margin-top:6px!important}.show-hero p{font-size:16px}.section-title{margin-top:28px}.app-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .dashboard-summary,.activity-strip,.hero-stats{display:none!important}
 @media(max-width:700px){.show-hero h1{font-size:32px!important}.show-card{grid-template-columns:55px minmax(0,1fr) 18px!important}}
+
+
+/* Hub v11: final logo sizing and show hero lockup */
+.topbar .brand-button{display:flex!important;align-items:center!important;min-width:235px!important;padding:0!important;overflow:visible!important}
+.topbar .brand-button .ts-logo{display:flex!important;flex-direction:row!important;align-items:center!important;gap:11px!important;white-space:nowrap!important}
+.topbar .brand-button .ts-logo>svg{display:block!important;width:44px!important;height:48px!important;padding:6px!important;border-radius:12px!important;flex:0 0 44px!important}
+.topbar .brand-button .ts-wordmark{display:flex!important;flex-direction:column!important;align-items:flex-start!important;line-height:1!important;position:static!important;transform:none!important}
+.topbar .brand-button .ts-wordmark b{display:block!important;font-size:16px!important;line-height:1!important;color:#fff!important;letter-spacing:.055em!important;white-space:nowrap!important}
+.topbar .brand-button .ts-wordmark small{display:block!important;font-size:7px!important;line-height:1!important;color:#5fd4ca!important;letter-spacing:.27em!important;margin-top:6px!important;white-space:nowrap!important}
+.show-hero{min-height:255px!important;padding:28px 34px 24px!important;gap:8px!important}
+.show-hero .hero-logo{width:min(440px,75vw)!important;height:112px!important;max-width:none!important;border-radius:0!important;background:transparent!important;overflow:visible!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.show-hero .hero-logo img{width:100%!important;height:100%!important;max-width:440px!important;object-fit:contain!important;background:transparent!important}
+.show-hero .hero-logo>svg{width:76px!important;height:76px!important}
+.show-hero h1{font-size:40px!important;line-height:1!important;margin:2px 0 6px!important}
+.show-hero p{font-size:16px!important}
+@media(max-width:700px){.topbar .brand-button{min-width:0!important}.topbar .brand-button .ts-wordmark{display:none!important}.show-hero .hero-logo{height:86px!important}.show-hero h1{font-size:31px!important}}

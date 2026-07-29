@@ -33,3 +33,8 @@ The Team & Permissions screen in this version is a UI prototype and saves locall
 
 ## Deploy
 Upload these files over the existing Hub repository root. Do not upload `node_modules`, `dist`, `.env`, or `.DS_Store`. Vercel will rebuild automatically.
+
+
+## Update 4.0.0
+- Unified Taylor Scout logo and dashboard navigation.
+- Interface and print refinements requested July 29, 2026.

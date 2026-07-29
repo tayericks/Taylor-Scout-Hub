@@ -8,6 +8,8 @@ import {
 import { configured, fetchShows, supabase } from './supabase';
 import './styles.css';
 
+function TaylorScoutLogo({compact=false}) { return <span className={`ts-logo ${compact?'compact':''}`} aria-label="Taylor Scout"><svg viewBox="0 0 74 92" role="img" aria-hidden="true"><path className="pin-outline" d="M37 3C18 3 5 17 5 36c0 22 17 40 32 53 15-13 32-31 32-53C69 17 56 3 37 3Z"/><path className="mountain" d="M16 39l15-13 8 7 10-10 12 14-12-8-10 10-8-7-15 7Z"/><path className="road" d="M19 69c12-14 24-18 31-27-3 14-12 22-20 31l7 8-9 2-9-14Z"/><path className="star" d="M21 17l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"/></svg><span className="ts-wordmark"><b>TAYLOR SCOUT</b><small>PRODUCTION TOOLS</small></span></span> }
+
 const APPS = [
   {
     key: 'calendar', title: 'Prep / Wrap Calendar', icon: CalendarDays,
@@ -89,7 +91,7 @@ function Login({ onReady }) {
   }
   return <main className="login-shell">
     <section className="login-card">
-      <div className="brand-lockup"><span className="brand-pin"><MapPin size={22}/></span><div><b>TAYLOR SCOUT</b><small>PRODUCTION TOOLS</small></div></div>
+      <div className="brand-lockup"><TaylorScoutLogo/></div>
       <h1>Sign in</h1><p>Open your productions and connected tools.</p>
       <form onSubmit={signIn}>
         <label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label>
@@ -104,7 +106,7 @@ function Login({ onReady }) {
 
 function Header({ show, onHome, onSignOut }) {
   return <header className="topbar">
-    <button className="brand-button" onClick={onHome}><span className="brand-pin"><MapPin size={19}/></span><span><b>TAYLOR SCOUT</b><small>PRODUCTION TOOLS</small></span></button>
+    <button className="brand-button" onClick={onHome}><TaylorScoutLogo/></button>
     <div className="crumb">{show ? show.name : 'Your Shows'}</div>
     <button className="icon-button" onClick={onSignOut} title="Sign out"><LogOut size={18}/></button>
   </header>;

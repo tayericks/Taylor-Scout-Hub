@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   Activity, ArrowLeft, BookOpen, CalendarDays, Check, ChevronRight, Clock3,
@@ -155,13 +155,9 @@ function Shows({ shows, loading, onOpen }) {
     </div>
     {loading ? <div className="empty">Loading shows…</div> : shows.length === 0 ? <div className="empty"><h2>No shows available</h2><p>Request access to create your first production workspace.</p><button className="primary" onClick={()=>setRequestOpen(true)}>Request New Show</button></div> :
       <div className="show-list">{filtered.map(show => {
-        const episodes = Array.isArray(show.episodes) ? show.episodes.length : 0;
-        const itineraries = Array.isArray(show.itineraries) ? show.itineraries.length : 0;
-        const locations = Array.isArray(show.locationLibrary) ? show.locationLibrary.length : 0;
         return <button key={show.id} className="show-card" onClick={()=>onOpen(show)}>
           <div className="show-art">{show.logo ? <img src={show.logo} alt=""/> : <MapPin size={28}/>}</div>
           <div className="show-main"><p className="eyebrow">{show.season || 'PRODUCTION'}</p><h2>{show.name}</h2><p>{show.company || show.productionOffice?.address || 'Production workspace'}</p></div>
-          <div className="stats"><span><b>{episodes}</b> Episodes</span><span><b>{itineraries}</b> Itineraries</span><span><b>{locations}</b> Locations</span></div>
           <div className="role"><ShieldCheck size={16}/>{String(show.role || 'member').replace(/^./, c=>c.toUpperCase())}</div>
           <ChevronRight className="chev"/>
         </button>;
@@ -238,14 +234,9 @@ function Dashboard({ show, onBack }) {
     <section className="show-hero">
       <div className="hero-logo">{show.logo ? <img src={show.logo} alt=""/> : <MapPin size={34}/>}</div>
       <div><p className="eyebrow">{show.season || 'SHOW DASHBOARD'}</p><h1>{show.name}</h1><p>{show.company || show.productionOffice?.address || 'Connected production workspace'}</p></div>
-      <div className="hero-stats"><span><b>{counts.episodes}</b> Episodes</span><span><b>{counts.itineraries}</b> Itineraries</span><span><b>{counts.locations}</b> Saved locations</span></div>
     </section>
 
-    <section className="dashboard-summary">
-      <div className="summary-card"><CalendarDays size={19}/><span><b>Upcoming schedule</b><small>Open Calendar to manage prep, hold, shoot, and strike dates.</small></span></div>
-      <div className="summary-card"><ListChecks size={19}/><span><b>Location pipeline</b><small>Candidate tracking and final locations list are ready for the next build.</small></span></div>
-      <div className="summary-card"><DollarSign size={19}/><span><b>Financial privacy</b><small>Owner-controlled Budget access will support assigned-location views.</small></span></div>
-    </section>
+
 
     <div className="section-title"><div><p className="eyebrow">TOOLS</p><h2>Production workspace</h2></div><div className="connected"><Users size={16}/> Shared show access</div></div>
     <section className="app-grid">
@@ -263,10 +254,7 @@ function Dashboard({ show, onBack }) {
       })}
     </section>
 
-    <section className="activity-strip">
-      <div><Activity size={18}/><span><b>One show record</b><small>Calendar, locations, budgets, orders, and maps will share the same record IDs.</small></span></div>
-      <div><SlidersHorizontal size={18}/><span><b>Permission-aware tools</b><small>Owners control tool, episode, location, and financial visibility.</small></span></div>
-    </section>
+
     {permissionsOpen && <PermissionsModal show={show} onClose={()=>setPermissionsOpen(false)}/>} 
   </main>;
 }
@@ -278,6 +266,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [activeShow, setActiveShow] = useState(null);
   const [error, setError] = useState('');
+  const [showChooser, setShowChooser] = useState(false);
+  const initialSelectionDone = useRef(false);
 
   async function load() {
     if (!configured) return setReady(true);
@@ -290,15 +280,22 @@ function App() {
     setLoading(false);
   }
   useEffect(() => { load(); if (!configured) return; const { data } = supabase.auth.onAuthStateChange((_event,s)=>setSession(s)); return ()=>data.subscription.unsubscribe(); }, []);
-  useEffect(() => { if (session) loadShows(); else { setShows([]); setActiveShow(null); } }, [session?.user?.id]);
+  useEffect(() => { if (session) loadShows(); else { setShows([]); setActiveShow(null); initialSelectionDone.current=false; } }, [session?.user?.id]);
+  useEffect(() => {
+    if (!session || loading || !shows.length || activeShow || showChooser || initialSelectionDone.current) return;
+    const remembered = localStorage.getItem('ts-active-show-id');
+    const next = shows.find(s => s.id === remembered) || shows[0];
+    if (next) { setActiveShow(next); localStorage.setItem('ts-active-show-id', next.id); }
+    initialSelectionDone.current = true;
+  }, [session, loading, shows, activeShow, showChooser]);
 
   if (!configured) return <main className="login-shell"><section className="login-card"><h1>Connect Supabase</h1><p>Add the same Supabase URL and anon key used by Scout Route to this project’s Vercel environment variables.</p></section></main>;
   if (!ready) return <div className="loading-screen">Loading Taylor Scout…</div>;
   if (!session) return <Login onReady={load}/>;
   return <div className="app-shell">
-    <Header show={activeShow} onHome={()=>setActiveShow(null)} onSignOut={()=>supabase.auth.signOut()}/>
+    <Header show={activeShow} onHome={()=>{ if (activeShow) return; const next=shows[0]; if(next){setActiveShow(next);setShowChooser(false);} }} onSignOut={()=>supabase.auth.signOut()}/>
     {error && <div className="error-banner">{error}</div>}
-    {activeShow ? <Dashboard show={activeShow} onBack={()=>setActiveShow(null)}/> : <Shows shows={shows} loading={loading} onOpen={setActiveShow}/>} 
+    {activeShow && !showChooser ? <Dashboard show={activeShow} onBack={()=>{setShowChooser(true);setActiveShow(null);}}/> : <Shows shows={shows} loading={loading} onOpen={show=>{setActiveShow(show);setShowChooser(false);localStorage.setItem('ts-active-show-id',show.id)}}/>} 
   </div>;
 }
 

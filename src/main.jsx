@@ -22,7 +22,7 @@ const APPS = [
   {
     key: 'locations', title: 'Location List', icon: ListChecks,
     description: 'Track candidate locations and maintain the final connected locations list.',
-    env: 'VITE_LOCATION_LIST_URL', fallback: '', status: 'Coming soon'
+    env: 'VITE_LOCATION_LIST_URL', fallback: 'https://locations.taylorscout.com', status: 'Open tool'
   },
   {
     key: 'budget', title: 'Budget', icon: WalletCards,

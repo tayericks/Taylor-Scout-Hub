@@ -6,11 +6,7 @@ import {
   Route, Search, ShieldCheck, SlidersHorizontal, Users, WalletCards, X, Plus, Send
 } from 'lucide-react';
 import { configured, fetchShows, submitShowRequest, supabase } from './supabase';
-import { mountTaylorScoutCore, setSuiteContext, toolUrl as buildSuiteToolUrl } from '../../../packages/core/browser.js';
 import './styles.css';
-
-
-mountTaylorScoutCore({ toolId: 'hub' });
 
 function TaylorScoutLogo({compact=false}) { return <span className={`ts-logo ${compact?'compact':''}`} aria-label="Taylor Scout"><svg viewBox="0 0 74 92" role="img" aria-hidden="true"><path className="pin-outline" d="M37 3C18 3 5 17 5 36c0 22 17 40 32 53 15-13 32-31 32-53C69 17 56 3 37 3Z"/><path className="mountain" d="M16 39l15-13 8 7 10-10 12 14-12-8-10 10-8-7-15 7Z"/><path className="road" d="M19 69c12-14 24-18 31-27-3 14-12 22-20 31l7 8-9 2-9-14Z"/><path className="star" d="M21 17l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"/></svg><span className="ts-wordmark"><b>TAYLOR SCOUT</b><small>PRODUCTION TOOLS</small></span></span> }
 
@@ -230,7 +226,7 @@ function Dashboard({ show, onBack }) {
     target.searchParams.set('showName', show.name || '');
     target.searchParams.set('fromHub', '1');
     if (app.key === 'scout') target.searchParams.set('tool', 'scout-route');
-    return buildSuiteToolUrl(target.toString(), { showId: show.id, showName: show.name || '' }, { from: 'hub' });
+    return target.toString();
   }
 
   return <main className="page dashboard-page">
@@ -289,7 +285,7 @@ function App() {
     if (!session || loading || !shows.length || activeShow || showChooser || initialSelectionDone.current) return;
     const remembered = localStorage.getItem('ts-active-show-id');
     const next = shows.find(s => s.id === remembered) || shows[0];
-    if (next) { setActiveShow(next); setSuiteContext({ showId: next.id, showName: next.name || '' }); }
+    if (next) { setActiveShow(next); localStorage.setItem('ts-active-show-id', next.id); }
     initialSelectionDone.current = true;
   }, [session, loading, shows, activeShow, showChooser]);
 
@@ -299,7 +295,7 @@ function App() {
   return <div className="app-shell">
     <Header show={activeShow} onHome={()=>{ if (activeShow) return; const next=shows[0]; if(next){setActiveShow(next);setShowChooser(false);} }} onSignOut={()=>supabase.auth.signOut()}/>
     {error && <div className="error-banner">{error}</div>}
-    {activeShow && !showChooser ? <Dashboard show={activeShow} onBack={()=>{setShowChooser(true);setActiveShow(null);}}/> : <Shows shows={shows} loading={loading} onOpen={show=>{setActiveShow(show);setShowChooser(false);setSuiteContext({ showId: show.id, showName: show.name || '' })}}/>} 
+    {activeShow && !showChooser ? <Dashboard show={activeShow} onBack={()=>{setShowChooser(true);setActiveShow(null);}}/> : <Shows shows={shows} loading={loading} onOpen={show=>{setActiveShow(show);setShowChooser(false);localStorage.setItem('ts-active-show-id',show.id)}}/>} 
   </div>;
 }
 

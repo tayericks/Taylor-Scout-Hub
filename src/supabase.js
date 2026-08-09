@@ -19,15 +19,18 @@ export async function fetchShows() {
   if (!configured) return [];
   const { data, error } = await supabase.rpc('list_accessible_shows');
   if (error) throw error;
-  return (data || []).map((row) => ({
-    ...(row.payload && typeof row.payload === 'object' ? row.payload : {}),
-    id: row.show_id,
-    name: row.show_name || row.payload?.name || 'Untitled Show',
-    role: row.role || 'member',
-    canInvite: Boolean(row.can_invite),
-    permissions: row.permissions || legacyPermissions(row.role || 'viewer'),
-    updatedAt: row.updated_at,
-  }));
+  return (data || []).map((row) => {
+    const permissions = row.permissions || legacyPermissions(row.role || 'viewer');
+    return {
+      ...(row.payload && typeof row.payload === 'object' ? row.payload : {}),
+      id: row.show_id,
+      name: row.show_name || row.payload?.name || 'Untitled Show',
+      role: row.role || 'member',
+      canInvite: Boolean(row.can_invite),
+      permissions,
+      updatedAt: row.updated_at,
+    };
+  }).filter(show => show.role === 'owner' || ['read','write'].includes(show.permissions?.tools?.hub));
 }
 
 export async function listShowMembers(showId) {

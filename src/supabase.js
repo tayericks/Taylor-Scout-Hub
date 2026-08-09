@@ -8,6 +8,13 @@ export const supabase = configured
   ? createClient(url, anonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: createSharedCookieStorage() } })
   : null;
 
+const legacyPermissions = role => ({
+  tools: Object.fromEntries(['hub','budget','bible','calendar','locations','scout-route'].map(tool => [tool, role === 'viewer' ? 'read' : 'write'])),
+  location_ids: null,
+  episode_ids: null,
+  lifecycle: role === 'owner'
+});
+
 export async function fetchShows() {
   if (!configured) return [];
   const { data, error } = await supabase.rpc('list_accessible_shows');
@@ -17,10 +24,50 @@ export async function fetchShows() {
     id: row.show_id,
     name: row.show_name || row.payload?.name || 'Untitled Show',
     role: row.role || 'member',
+    canInvite: Boolean(row.can_invite),
+    permissions: row.permissions || legacyPermissions(row.role || 'viewer'),
     updatedAt: row.updated_at,
   }));
 }
 
+export async function listShowMembers(showId) {
+  if (!configured) return [];
+  const { data, error } = await supabase.rpc('list_show_members', { p_show_id: showId });
+  if (error) throw error;
+  return (data || []).map(row => ({
+    userId: row.user_id,
+    email: row.email || '',
+    name: row.display_name || row.email || 'Teammate',
+    role: row.role,
+    status: row.status,
+    canInvite: Boolean(row.can_invite),
+    permissions: row.permissions || (row.status === 'active' ? legacyPermissions(row.role) : null),
+  }));
+}
+
+export async function setShowMemberPermissions(showId, userId, permissions) {
+  if (!configured) throw new Error('Supabase is not configured.');
+  if (!userId) throw new Error('Choose an active teammate first.');
+  const { error } = await supabase.rpc('set_show_member_permissions', {
+    p_show_id: showId,
+    p_user_id: userId,
+    p_permissions: permissions,
+  });
+  if (error) {
+    if (error.code === '42883') throw new Error('The Taylor Scout permissions migration has not been installed yet.');
+    throw error;
+  }
+}
+
+export async function getMyShowPermissions(showId) {
+  if (!configured) return null;
+  const { data, error } = await supabase.rpc('get_my_show_permissions', { p_show_id: showId });
+  if (!error) return data;
+  if (error.code !== '42883') throw error;
+  const { data: role, error: roleError } = await supabase.rpc('show_access_role', { p_show_id: showId });
+  if (roleError) throw roleError;
+  return legacyPermissions(role || 'viewer');
+}
 
 export async function submitShowRequest(request) {
   if (!configured) throw new Error('Supabase is not configured.');

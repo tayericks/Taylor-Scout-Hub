@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/waypoint", "destination": "/" },
+    { "source": "/waypoint/(.*)", "destination": "/" }
+  ]
+}

@@ -4,6 +4,8 @@ import WaypointWorkspace from './waypoint/WaypointWorkspace';
 import CrewMapsWorkspace from './crew-maps/CrewMapsDesignBoard';
 import './crew-maps/crew-maps-locked-hybrid.css';
 import './crew-maps/crew-maps-locked-hybrid.js';
+import './crew-maps/crew-maps-shell-viewport-fix.css';
+import './crew-maps/crew-maps-shell-viewport-fix.js';
 import { configured, fetchShows, supabase } from './supabase';
 
 const pathname = window.location.pathname;

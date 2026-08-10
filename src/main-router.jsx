@@ -47,10 +47,31 @@ function ToolGate({tool}) {
   return tool === 'crew-maps' ? <CrewMapsWorkspace show={state.show} onBack={back}/> : <WaypointWorkspace show={state.show} onBack={back}/>;
 }
 
+function installCrewMapsLinkGuard() {
+  document.addEventListener('click', event => {
+    const anchor = event.target?.closest?.('a');
+    if (!anchor) return;
+    let href;
+    try { href = new URL(anchor.href, window.location.origin); } catch { return; }
+    const isCrewMapsCard = /crew maps/i.test(anchor.textContent || '');
+    if (!href.pathname.startsWith('/crew-maps') && !isCrewMapsCard) return;
+
+    event.preventDefault();
+    const target = new URL('/crew-maps', window.location.origin);
+    ['show','showId','showName','fromHub'].forEach(key => {
+      const value = href.searchParams.get(key);
+      if (value) target.searchParams.set(key, value);
+    });
+    target.searchParams.set('fromHub', '1');
+    window.location.assign(target.toString());
+  }, true);
+}
+
 if (isWaypointRoute) {
   createRoot(document.getElementById('root')).render(<ToolGate tool="waypoint" />);
 } else if (isCrewMapsRoute) {
   createRoot(document.getElementById('root')).render(<ToolGate tool="crew-maps" />);
 } else {
+  installCrewMapsLinkGuard();
   import('./main.jsx');
 }

@@ -34,13 +34,16 @@ export default function WaypointWorkspace({show,onBack}:Props){
   const selectedEvent=useMemo(()=>events.find(e=>e.id===calendarId)||null,[events,calendarId]);
 
   useEffect(()=>{let dead=false;(async()=>{setLoading(true);setError('');
-    const [{data:cal,error:calErr},{data:docs,error:docErr}] = await Promise.all([
+    const [{data:cal,error:calErr},{data:docs,error:docErr},{data:legacy,error:legacyErr}] = await Promise.all([
       supabase.from('tool_documents').select('payload').eq('show_id',show.id).eq('tool_key','calendar').maybeSingle(),
-      supabase.from('tool_documents').select('tool_key,payload,updated_at').eq('show_id',show.id).like('tool_key','waypoint:%').order('updated_at',{ascending:false})
+      supabase.from('tool_documents').select('tool_key,payload,updated_at').eq('show_id',show.id).like('tool_key','waypoint:%').order('updated_at',{ascending:false}),
+      supabase.from('tool_documents').select('tool_key,payload,updated_at').eq('show_id',show.id).eq('tool_key','waypoint').maybeSingle()
     ]);
-    if(dead)return;if(calErr||docErr){setError((calErr||docErr)?.message||'Could not load Waypoint data.');setLoading(false);return}
+    if(dead)return;if(calErr||docErr||legacyErr){setError((calErr||docErr||legacyErr)?.message||'Could not load Waypoint data.');setLoading(false);return}
     const ev=Array.isArray(cal?.payload?.events)?cal.payload.events.filter((x:any)=>x.eventType!=='note'):[];setEvents(ev);
-    const list=(docs||[]).map((row:any)=>{const c=row.payload?.context||{};return {id:c.id||row.tool_key.replace('waypoint:',''),toolKey:row.tool_key,...c}});setSchematics(list);setLoading(false);
+    const list=(docs||[]).map((row:any)=>{const c=row.payload?.context||{};return {id:c.id||row.tool_key.replace('waypoint:',''),toolKey:row.tool_key,...c}});
+    if(legacy?.payload){const c=legacy.payload.context||{};list.push({id:'legacy-waypoint',toolKey:'waypoint',location:c.location||'Existing Waypoint',set:c.set||'Legacy schematic',episode:c.episode||show.season||'',scenes:c.scenes||'',unit:c.unit||'',address:c.address||'',shootStart:c.shootStart||'',shootEnd:c.shootEnd||'',locationId:c.locationId||''})}
+    setSchematics(list);setLoading(false);
   })();return()=>{dead=true}},[show.id]);
 
   async function createFromCalendar(){if(!selectedEvent)return;const id=crypto.randomUUID();const context:SchematicContext={id,toolKey:`waypoint:${id}`,calendarEventId:selectedEvent.id,locationId:selectedEvent.locationId||'',episode:selectedEvent.episode||'',scenes:selectedEvent.scenes||'',unit:selectedEvent.unit||'',set:selectedEvent.set||'',location:selectedEvent.location||'Untitled Location',address:selectedEvent.address||'',shootStart:selectedEvent.shootStart||'',shootEnd:selectedEvent.shootEnd||selectedEvent.shootStart||''};

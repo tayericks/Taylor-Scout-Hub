@@ -39,7 +39,12 @@ const APPS = [
   {
     key: 'waypoint', title: 'Waypoint', icon: Map,
     description: 'Create professional logistics maps and set schematics.',
-    env: 'VITE_WAYPOINT_URL', fallback: '', status: 'Coming soon'
+    env: 'VITE_WAYPOINT_URL', fallback: '/waypoint', status: 'Open tool'
+  },
+  {
+    key: 'crew-maps', title: 'Crew Maps', icon: FileText,
+    description: 'Generate crew directional maps from Calendar, Bible, Location List, and Waypoint data.',
+    env: 'VITE_CREW_MAPS_URL', fallback: '/crew-maps', status: 'Open tool'
   }
 ];
 
@@ -65,6 +70,7 @@ function envUrl(name, fallback) {
     VITE_LOCATION_LIST_URL: import.meta.env.VITE_LOCATION_LIST_URL,
     VITE_BUDGET_URL: import.meta.env.VITE_BUDGET_URL,
     VITE_WAYPOINT_URL: import.meta.env.VITE_WAYPOINT_URL,
+    VITE_CREW_MAPS_URL: import.meta.env.VITE_CREW_MAPS_URL,
     VITE_BIBLE_URL: import.meta.env.VITE_BIBLE_URL,
   };
   return (map[name] || fallback || '').trim();
@@ -215,8 +221,6 @@ function Dashboard({ show, onBack }) {
     if (!url) return '';
 
     if (app.key === 'scout') {
-      // Scout Route is always an absolute link to its own app domain.
-      // Never allow a bad environment variable to point back to the Hub.
       url = 'https://app.taylorscout.com';
     }
 
@@ -236,8 +240,6 @@ function Dashboard({ show, onBack }) {
       <div><p className="eyebrow">{show.season || 'SHOW DASHBOARD'}</p><h1>{show.name}</h1><p>{show.company || show.productionOffice?.address || 'Connected production workspace'}</p></div>
     </section>
 
-
-
     <div className="section-title"><div><p className="eyebrow">TOOLS</p><h2>Production workspace</h2></div><div className="connected"><Users size={16}/> Shared show access</div></div>
     <section className="app-grid">
       {APPS.map(app => {
@@ -253,7 +255,6 @@ function Dashboard({ show, onBack }) {
         </div>;
       })}
     </section>
-
 
     {permissionsOpen && <PermissionsModal show={show} onClose={()=>setPermissionsOpen(false)}/>} 
   </main>;

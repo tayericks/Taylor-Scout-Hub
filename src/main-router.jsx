@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import WaypointWorkspace from './waypoint/WaypointWorkspace';
-import CrewMapsWorkspace from './crew-maps/CrewMapsWorkspaceV3';
+import CrewMapsWorkspace from './crew-maps/CrewMapsDesignBoard';
 import { configured, fetchShows, supabase } from './supabase';
 
 const pathname = window.location.pathname;

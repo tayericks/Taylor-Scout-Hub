@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import WaypointWorkspace from './waypoint/WaypointWorkspace';
+import CrewMapsWorkspace from './crew-maps/CrewMapsWorkspace';
 import { configured, fetchShows, supabase } from './supabase';
 
-const isWaypointRoute = window.location.pathname === '/waypoint' || window.location.pathname.startsWith('/waypoint/');
+const pathname = window.location.pathname;
+const isWaypointRoute = pathname === '/waypoint' || pathname.startsWith('/waypoint/');
+const isCrewMapsRoute = pathname === '/crew-maps' || pathname.startsWith('/crew-maps/');
 
-function WaypointGate() {
+function ToolGate({tool}) {
   const [state, setState] = useState({ loading: true, show: null, error: '' });
 
   useEffect(() => {
@@ -25,22 +28,26 @@ function WaypointGate() {
         const params = new URLSearchParams(window.location.search);
         const showId = params.get('showId') || params.get('show');
         const show = shows.find(item => item.id === showId) || shows[0] || null;
-        if (!cancelled) setState({ loading: false, show, error: show ? '' : 'No accessible show is available for Waypoint.' });
+        if (!cancelled) setState({ loading: false, show, error: show ? '' : `No accessible show is available for ${tool === 'crew-maps' ? 'Crew Maps' : 'Waypoint'}.` });
       } catch (error) {
         if (!cancelled) setState({ loading: false, show: null, error: error?.message || String(error) });
       }
     }
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [tool]);
 
-  if (state.loading) return <div style={{height:'100vh',display:'grid',placeItems:'center',background:'#0b0f12',color:'#dfe5e3',fontFamily:'system-ui'}}>Loading Waypoint…</div>;
-  if (state.error) return <div style={{height:'100vh',display:'grid',placeItems:'center',background:'#0b0f12',color:'#dfe5e3',fontFamily:'system-ui'}}><div><h2>Waypoint</h2><p>{state.error}</p><button onClick={()=>window.location.assign('/')}>Return to Taylor Scout</button></div></div>;
-  return <WaypointWorkspace show={state.show} onBack={() => window.location.assign(`/?show=${encodeURIComponent(state.show.id)}&showId=${encodeURIComponent(state.show.id)}&showName=${encodeURIComponent(state.show.name || '')}`)} />;
+  const label = tool === 'crew-maps' ? 'Crew Maps' : 'Waypoint';
+  if (state.loading) return <div style={{height:'100vh',display:'grid',placeItems:'center',background:tool==='crew-maps'?'#f3f6f8':'#0b0f12',color:tool==='crew-maps'?'#203247':'#dfe5e3',fontFamily:'system-ui'}}>Loading {label}…</div>;
+  if (state.error) return <div style={{height:'100vh',display:'grid',placeItems:'center',background:tool==='crew-maps'?'#f3f6f8':'#0b0f12',color:tool==='crew-maps'?'#203247':'#dfe5e3',fontFamily:'system-ui'}}><div><h2>{label}</h2><p>{state.error}</p><button onClick={()=>window.location.assign('/')}>Return to Taylor Scout</button></div></div>;
+  const back = () => window.location.assign(`/?show=${encodeURIComponent(state.show.id)}&showId=${encodeURIComponent(state.show.id)}&showName=${encodeURIComponent(state.show.name || '')}`);
+  return tool === 'crew-maps' ? <CrewMapsWorkspace show={state.show} onBack={back}/> : <WaypointWorkspace show={state.show} onBack={back}/>;
 }
 
 if (isWaypointRoute) {
-  createRoot(document.getElementById('root')).render(<WaypointGate />);
+  createRoot(document.getElementById('root')).render(<ToolGate tool="waypoint" />);
+} else if (isCrewMapsRoute) {
+  createRoot(document.getElementById('root')).render(<ToolGate tool="crew-maps" />);
 } else {
   import('./main.jsx');
 }

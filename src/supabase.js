@@ -91,15 +91,17 @@ export async function createProduction(input) {
 }
 
 export async function fetchProductionCore(showId) {
-  const [settingsResult, unitsResult, setsResult, setUnitsResult, scenesResult, setScenesResult] = await Promise.all([
+  const [settingsResult, unitsResult, setsResult, setUnitsResult, scenesResult, setScenesResult, locationsResult, locationSetsResult] = await Promise.all([
     supabase.from('production_settings').select('*').eq('show_id', showId).maybeSingle(),
     supabase.from('production_units').select('*').eq('show_id', showId).eq('active', true).order('sort_order').order('name'),
     supabase.from('production_sets').select('*').eq('show_id', showId).order('sort_order').order('name'),
     supabase.from('production_set_units').select('set_id,unit_id').eq('show_id', showId),
     supabase.from('production_scenes').select('*').eq('show_id', showId).order('sort_order').order('scene_number'),
-    supabase.from('production_set_scenes').select('set_id,scene_id').eq('show_id', showId)
+    supabase.from('production_set_scenes').select('set_id,scene_id').eq('show_id', showId),
+    supabase.from('production_locations').select('id,location_name,address,city,state,postal_code,area,status,is_final,notes,metadata,updated_at').eq('show_id', showId),
+    supabase.from('production_location_sets').select('location_id,set_id,unit_id').eq('show_id', showId)
   ]);
-  [settingsResult, unitsResult, setsResult, setUnitsResult, scenesResult, setScenesResult].forEach(result => throwIf(result.error));
+  [settingsResult, unitsResult, setsResult, setUnitsResult, scenesResult, setScenesResult, locationsResult, locationSetsResult].forEach(result => throwIf(result.error));
 
   const unitIdsBySet = new Map();
   for (const link of setUnitsResult.data || []) {
@@ -115,13 +117,24 @@ export async function fetchProductionCore(showId) {
     if (scene) scenes.push(scene);
     scenesBySet.set(link.set_id, scenes);
   }
+  const locationsById = new Map((locationsResult.data || []).map(location => [location.id, location]));
+  const selectedLocationsBySet = new Map();
+  for (const link of locationSetsResult.data || []) {
+    const location = locationsById.get(link.location_id);
+    const locked = location?.is_final || String(location?.status || '').toLowerCase() === 'selected';
+    if (!location || location.metadata?.archived_at || !locked) continue;
+    const linked = selectedLocationsBySet.get(link.set_id) || [];
+    if (!linked.some(item => item.id === location.id)) linked.push(location);
+    selectedLocationsBySet.set(link.set_id, linked);
+  }
   return {
     settings: settingsResult.data,
     units: unitsResult.data || [],
     sets: (setsResult.data || []).map(set => ({
       ...set,
       unitIds: unitIdsBySet.get(set.id) || [],
-      scenes: scenesBySet.get(set.id) || []
+      scenes: scenesBySet.get(set.id) || [],
+      selectedLocations: selectedLocationsBySet.get(set.id) || []
     }))
   };
 }
@@ -254,7 +267,7 @@ export async function fetchMyToolAccess(showId, toolKey) {
 export function subscribeProductionCore(showId, onChange) {
   const tables = [
     'production_settings','production_units','production_sets','production_set_units',
-    'production_scenes','production_set_scenes'
+    'production_scenes','production_set_scenes','production_locations','production_location_sets'
   ];
   let channel = supabase.channel(`production-core:${showId}`);
   tables.forEach(table => {

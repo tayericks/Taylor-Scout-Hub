@@ -202,7 +202,7 @@ export default function SetListWorkspace({ show, onBack }) {
 
   function themeStyle(){
     const theme=core.settings?.theme||show.theme||{};
-    return {'--show-primary':theme.primary||'#061f33','--show-secondary':theme.secondary||'#0b2e46','--show-accent':theme.accent||'#2fb5b2','--show-font':theme.font||'Inter'};
+    return {'--show-primary':theme.primary||'#061f33','--show-secondary':theme.secondary||'#0b2e46','--show-accent':theme.accent||'#2fb5b2'};
   }
 
   return <main className="set-list-workspace" style={themeStyle()}>
@@ -214,20 +214,27 @@ export default function SetListWorkspace({ show, onBack }) {
     </aside>
     <section className="set-list-main">
       <header className="set-list-header"><div><p className="eyebrow">SCRIPT → SCOUTING</p><h1>Set List Breakdown</h1><p>Every scripted set, organized before scouting begins. No scouting status belongs here.</p></div><div className={`set-list-save-state ${syncState==='Save error'?'error':''}`}>{syncState==='Saved'?<Check size={15}/>:<RefreshCw size={15}/>} {syncState}</div></header>
+      <div className="set-list-logo-band" aria-label={`${show.name} Set List`}>
+        {show.logo?<img src={show.logo} alt={`${show.name} logo`}/>:<div className="set-list-logo-fallback"><b>{show.name}</b><span>{show.season||show.productionType||'Production'}</span></div>}
+      </div>
       <div className="set-list-toolbar"><label className="set-list-search"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search set, scene, episode, requirement…"/></label><select value={workFilter} onChange={e=>setWorkFilter(e.target.value)}><option value="all">All work types</option><option value="location">On Location</option><option value="stage">Stage</option><option value="tbd">TBD</option></select>{canEdit?<><button className="secondary" onClick={()=>setBulkOpen(true)}><ClipboardPaste size={16}/> Bulk paste</button><button className="primary" onClick={()=>setEditor(emptySet(core.sets.length))}><Plus size={16}/> Add set</button></>:<span className="read-only-badge"><LockKeyhole size={15}/> View only</span>}</div>
       <div className="set-list-summary"><button className={workFilter==='location'?'active':''} onClick={()=>setWorkFilter(workFilter==='location'?'all':'location')}><MapPin size={18}/><span><b>{counts.location}</b> On Location</span><small>Available to Location List</small></button><button className={workFilter==='stage'?'active':''} onClick={()=>setWorkFilter(workFilter==='stage'?'all':'stage')}><Warehouse size={18}/><span><b>{counts.stage}</b> Stage</span><small>Separated automatically</small></button><button className={workFilter==='tbd'?'active':''} onClick={()=>setWorkFilter(workFilter==='tbd'?'all':'tbd')}><Layers3 size={18}/><span><b>{counts.tbd}</b> TBD</span><small>Needs classification</small></button></div>
       {message&&<div className="set-list-error">{message}<button onClick={()=>setMessage('')}><X size={15}/></button></div>}
       <section className="set-list-table-shell">
-        <div className="set-list-table-head"><span></span><span>Set</span><span>Episodes / units</span><span>Scenes</span><span>Work</span><span>Pages</span></div>
+        <div className="set-list-table-head"><span></span><span>Set no.</span><span>Int / Ext</span><span>Set name</span><span>Loc / Stg</span><span>Selected location / address</span><span>Episode</span><span>Scene no.</span><span>Pg cnt</span><span>Notes</span></div>
         {loading?<div className="set-list-empty">Loading the connected Set List…</div>:!filtered.length?<div className="set-list-empty"><Layers3 size={28}/><h3>{core.sets.length?'No matching sets':'Start with the script’s set list'}</h3><p>{core.sets.length?'Clear the search or filters.':canEdit?'Add one line at a time or bulk paste directly from a spreadsheet.':'The production owner can grant Set List edit access from Team & Permissions.'}</p>{!core.sets.length&&canEdit&&<button className="primary" onClick={()=>setEditor(emptySet(0))}><Plus size={16}/> Add first set</button>}</div>:<div className="set-list-rows">{filtered.map(set=>{
-          const parent=setMap.get(set.parent_set_id);const unitLabels=set.unitIds.map(id=>unitMap.get(id)).filter(Boolean);const sceneNumbers=(set.scenes||[]).map(scene=>scene.scene_number);
+          const parent=setMap.get(set.parent_set_id);const unitLabels=set.unitIds.map(id=>unitMap.get(id)).filter(Boolean);const sceneNumbers=(set.scenes||[]).map(scene=>scene.scene_number);const selectedLocations=set.selectedLocations||[];
           return <button key={set.id} className={`set-list-row ${dragId===set.id?'dragging':''} ${set.parent_set_id?'child-set':''} ${canEdit?'':'view-only'}`} draggable={canEdit} onDragStart={event=>{if(!canEdit)return;setDragId(set.id);event.dataTransfer.effectAllowed='move';}} onDragOver={event=>{if(canEdit)event.preventDefault();}} onDrop={()=>canEdit&&dropOn(set.id)} onDragEnd={()=>setDragId(null)} onClick={()=>canEdit&&setEditor(set)}>
             <span className="drag-handle" onClick={event=>event.stopPropagation()}><GripVertical size={18}/></span>
-            <span className="set-cell">{parent&&<small>{parent.name} ›</small>}<b>{set.set_number&&<em>{set.set_number}</em>}{set.int_ext}. {set.name}</b>{set.requirements&&<small>{set.requirements}</small>}</span>
-            <span className="unit-cell">{unitLabels.length?unitLabels.map(unit=><i key={unit.id}>{unit.code||unit.name}</i>):<i>Production-wide</i>}</span>
+            <span className="set-number-cell">{set.set_number||'—'}</span>
+            <span className="int-ext-cell">{set.int_ext||'—'}</span>
+            <span className="set-cell">{parent&&<small>{parent.name} ›</small>}<b>{set.name}</b>{set.requirements&&<small>{set.requirements}</small>}</span>
+            <span className={`work-cell ${set.work_type}`}>{set.work_type==='location'?'LOC':set.work_type==='stage'?'STG':'TBD'}</span>
+            <span className={`selected-location-cell ${selectedLocations.length?'linked':''}`}>{selectedLocations.length?selectedLocations.map(location=><span key={location.id}><b><MapPin size={12}/>{location.location_name||'Selected location'}</b><small>{[location.address,location.city,location.state,location.postal_code].filter(Boolean).join(', ')}</small>{location.area&&<em>{location.area}</em>}</span>):<small>{set.work_type==='stage'?'Stage assignment':'Updates when a scout location is selected'}</small>}</span>
+            <span className="unit-cell">{unitLabels.length?unitLabels.map(unit=><i key={unit.id}>{unit.code||unit.name}</i>):<i>All</i>}</span>
             <span className="scene-cell">{sceneNumbers.length?sceneNumbers.slice(0,6).join(', '):'—'}{sceneNumbers.length>6&&<small> +{sceneNumbers.length-6}</small>}</span>
-            <span className={`work-pill ${set.work_type}`}>{set.work_type==='location'?'On Location':set.work_type==='stage'?'Stage':'TBD'}</span>
             <span className="pages-cell">{set.page_count??'—'}</span>
+            <span className="notes-cell">{set.notes||'—'}</span>
           </button>;
         })}</div>}
       </section>

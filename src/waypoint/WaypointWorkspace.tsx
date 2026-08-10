@@ -3,6 +3,7 @@ import { ArrowLeft, BookOpen, CalendarDays, ChevronDown, DollarSign, MapPin, Plu
 import WaypointApp from './WaypointApp';
 import { supabase } from '../supabase';
 import './waypoint.css';
+import './waypoint-refresh.css';
 
 type Props = { show:any; onBack?:()=>void };
 type CalendarEvent = {

@@ -5,12 +5,22 @@ import {
   DollarSign, FileText, Filter, ListChecks, LockKeyhole, LogOut, Map, MapPin,
   Route, Search, ShieldCheck, SlidersHorizontal, Users, WalletCards, X, Plus, Send
 } from 'lucide-react';
-import { configured, fetchShows, submitShowRequest, supabase } from './supabase';
+import {
+  configured, fetchShowTeamPermissions, fetchShows, inviteShowMember,
+  saveShowTeamPermissions, supabase, TOOL_PERMISSION_KEYS
+} from './supabase';
+import CreateProductionWizard from './CreateProductionWizard';
+import SetListWorkspace from './SetListWorkspace';
 import './styles.css';
 
 function TaylorScoutLogo({compact=false}) { return <span className={`ts-logo ${compact?'compact':''}`} aria-label="Taylor Scout"><svg viewBox="0 0 74 92" role="img" aria-hidden="true"><path className="pin-outline" d="M37 3C18 3 5 17 5 36c0 22 17 40 32 53 15-13 32-31 32-53C69 17 56 3 37 3Z"/><path className="mountain" d="M16 39l15-13 8 7 10-10 12 14-12-8-10 10-8-7-15 7Z"/><path className="road" d="M19 69c12-14 24-18 31-27-3 14-12 22-20 31l7 8-9 2-9-14Z"/><path className="star" d="M21 17l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"/></svg><span className="ts-wordmark"><b>TAYLOR SCOUT</b><small>PRODUCTION TOOLS</small></span></span> }
 
 const APPS = [
+  {
+    key: 'setlist', title: 'Set List Breakdown', icon: FileText, internal: true,
+    description: 'Turn the script into the canonical sets, episodes, scenes, hierarchy, and scouting categories.',
+    status: 'Open tool'
+  },
   {
     key: 'calendar', title: 'Prep / Wrap Calendar', icon: CalendarDays,
     description: 'Schedule episodes, units, sets, keys, prep, hold, shoot, and strike dates.',
@@ -48,20 +58,11 @@ const APPS = [
   }
 ];
 
-const ROLE_TEMPLATES = {
-  owner: { label: 'Owner', description: 'Full show, tool, team, and financial access.' },
-  manager: { label: 'Location Manager', description: 'Full operations access without ownership transfer.' },
-  key: { label: 'Key Assistant', description: 'Assigned locations, calendars, Bibles, and maps.' },
-  scout: { label: 'Scout', description: 'Scout Route and candidate-location tracker access.' },
-  accounting: { label: 'Accounting', description: 'Budget and actuals access only.' },
-  viewer: { label: 'Viewer', description: 'Read-only access to approved material.' }
+const TOOL_PERMISSION_LABELS = {
+  set_list: 'Set List', calendar: 'Calendar', scout_route: 'Scout Route',
+  location_list: 'Location List', budget: 'Budget', bible: 'Bible',
+  waypoint: 'Waypoint', wrap_book: 'Wrap Book'
 };
-
-const DEFAULT_PERMISSION_ROWS = [
-  { id: 'owner', name: 'Show Owner', email: 'Owner account', role: 'owner', scope: 'All locations', calendar: 'Edit', scout: 'Edit', locations: 'Edit', budget: 'Full', bible: 'Edit', waypoint: 'Edit', invite: true },
-  { id: 'key', name: 'Key Assistant', email: 'Template', role: 'key', scope: 'Assigned only', calendar: 'Edit', scout: 'View', locations: 'Assigned', budget: 'Totals only', bible: 'Edit', waypoint: 'Edit', invite: false },
-  { id: 'scout', name: 'Scout', email: 'Template', role: 'scout', scope: 'Assigned episodes', calendar: 'View', scout: 'Edit', locations: 'Scout tracker', budget: 'None', bible: 'None', waypoint: 'View', invite: false }
-];
 
 function envUrl(name, fallback) {
   const map = {
@@ -118,48 +119,15 @@ function Header({ show, onHome, onSignOut }) {
   </header>;
 }
 
-function RequestShowModal({ onClose }) {
-  const [form, setForm] = useState({ showName:'', season:'', company:'', accessType:'Production workspace', notes:'' });
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
-  const [complete, setComplete] = useState(false);
-  const update = (field, value) => setForm(current => ({ ...current, [field]: value }));
-  async function submit(e) {
-    e.preventDefault();
-    if (!form.showName.trim()) return setMessage('Enter the show name.');
-    setBusy(true); setMessage('');
-    try {
-      await submitShowRequest(form);
-      setComplete(true);
-    } catch (error) {
-      const text = String(error?.message || error);
-      setMessage(text.includes('show_requests') ? 'The request table has not been installed yet. Run the included Supabase migration, then submit again.' : text);
-    } finally { setBusy(false); }
-  }
-  return <div className="modal-backdrop" onMouseDown={e=>{ if(e.target===e.currentTarget) onClose(); }}>
-    <section className="request-modal" role="dialog" aria-modal="true" aria-label="Request a new show">
-      <header className="modal-header"><div><p className="eyebrow">NEW PRODUCTION</p><h2>Request a new show</h2><p>New productions require approval before a workspace is created. This keeps access controlled and supports future paid plans.</p></div><button className="icon-button" onClick={onClose}><X size={18}/></button></header>
-      {complete ? <div className="request-complete"><Check size={30}/><h3>Request submitted</h3><p>Your request is pending approval. The show will appear under Your Shows after it is approved and activated.</p><button className="primary" onClick={onClose}>Done</button></div> : <form className="request-form" onSubmit={submit}>
-        <label>Show name<input autoFocus value={form.showName} onChange={e=>update('showName',e.target.value)} placeholder="Example: El Dorado" required/></label>
-        <div className="request-grid"><label>Season<input value={form.season} onChange={e=>update('season',e.target.value)} placeholder="Season 3"/></label><label>Production company<input value={form.company} onChange={e=>update('company',e.target.value)} placeholder="Studio or production company"/></label></div>
-        <label>Access requested<select value={form.accessType} onChange={e=>update('accessType',e.target.value)}><option>Production workspace</option><option>Trial / evaluation</option><option>Additional show under current account</option></select></label>
-        <label>Notes<textarea value={form.notes} onChange={e=>update('notes',e.target.value)} placeholder="Expected start date, team size, or anything needed for approval." rows="4"/></label>
-        {message && <div className="message">{message}</div>}
-        <footer className="request-actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button className="primary" disabled={busy}><Send size={16}/>{busy?'Submitting…':'Submit request'}</button></footer>
-      </form>}
-    </section>
-  </div>;
-}
-
-function Shows({ shows, loading, onOpen }) {
+function Shows({ shows, loading, onOpen, onCreated }) {
   const [query, setQuery] = useState('');
   const [requestOpen, setRequestOpen] = useState(false);
   const filtered = shows.filter(show => `${show.name} ${show.season || ''} ${show.company || ''}`.toLowerCase().includes(query.toLowerCase()));
   return <main className="page">
     <div className="page-heading"><div><p className="eyebrow">PRODUCTIONS</p><h1>Your Shows</h1><p>Select a show to open its connected production workspace.</p></div>
-      <div className="shows-heading-actions"><label className="search-box"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search shows"/></label><button className="primary request-show-button" onClick={()=>setRequestOpen(true)}><Plus size={16}/> Request New Show</button></div>
+      <div className="shows-heading-actions"><label className="search-box"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search productions"/></label><button className="primary request-show-button" onClick={()=>setRequestOpen(true)}><Plus size={16}/> Create Production</button></div>
     </div>
-    {loading ? <div className="empty">Loading shows…</div> : shows.length === 0 ? <div className="empty"><h2>No shows available</h2><p>Request access to create your first production workspace.</p><button className="primary" onClick={()=>setRequestOpen(true)}>Request New Show</button></div> :
+    {loading ? <div className="empty">Loading productions…</div> : shows.length === 0 ? <div className="empty"><h2>No productions yet</h2><p>Create the first connected Taylor Scout workspace.</p><button className="primary" onClick={()=>setRequestOpen(true)}>Create Production</button></div> :
       <div className="show-list">{filtered.map(show => {
         return <button key={show.id} className="show-card" onClick={()=>onOpen(show)}>
           <div className="show-art">{show.logo ? <img src={show.logo} alt=""/> : <MapPin size={28}/>}</div>
@@ -168,47 +136,74 @@ function Shows({ shows, loading, onOpen }) {
           <ChevronRight className="chev"/>
         </button>;
       })}</div>}
-    {requestOpen && <RequestShowModal onClose={()=>setRequestOpen(false)}/>}
+    {requestOpen && <CreateProductionWizard onClose={()=>setRequestOpen(false)} onCreated={(showId,warnings)=>{setRequestOpen(false);onCreated(showId,warnings);}}/>}
   </main>;
 }
 
 function PermissionsModal({ show, onClose }) {
-  const storageKey = `taylor-scout-permissions-${show.id}`;
-  const [rows, setRows] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(storageKey)) || DEFAULT_PERMISSION_ROWS; }
-    catch { return DEFAULT_PERMISSION_ROWS; }
-  });
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
   const [saved, setSaved] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('viewer');
+  const canManage = show.role === 'owner';
 
-  function updateRow(id, field, value) {
-    setRows(current => current.map(row => row.id === id ? { ...row, [field]: value } : row));
+  async function loadRows() {
+    setLoading(true); setMessage('');
+    try { setRows(await fetchShowTeamPermissions(show.id)); }
+    catch (error) { setMessage(error?.message || String(error)); }
+    finally { setLoading(false); }
+  }
+  useEffect(() => { loadRows(); }, [show.id]);
+
+  function updateRow(id, toolKey, value) {
+    setRows(current => current.map(row => row.id === id ? {
+      ...row, permissions: { ...row.permissions, [toolKey]: value }
+    } : row));
     setSaved(false);
   }
-  function save() {
-    localStorage.setItem(storageKey, JSON.stringify(rows));
-    setSaved(true);
+  async function save() {
+    setBusy(true); setMessage('');
+    try { await saveShowTeamPermissions(show.id, rows); setSaved(true); }
+    catch (error) { setMessage(error?.message || String(error)); }
+    finally { setBusy(false); }
+  }
+  async function invite(event) {
+    event.preventDefault();
+    if (!inviteEmail.trim()) return;
+    setBusy(true); setMessage('');
+    try {
+      await inviteShowMember(show.id, inviteEmail, inviteRole);
+      setInviteEmail(''); setInviteRole('viewer');
+      await loadRows();
+      setMessage('Invitation saved. Registered teammates receive access immediately; new accounts remain pending.');
+    } catch (error) { setMessage(error?.message || String(error)); }
+    finally { setBusy(false); }
   }
   return <div className="modal-backdrop" role="presentation" onMouseDown={e=>{ if (e.target === e.currentTarget) onClose(); }}>
     <section className="permissions-modal" role="dialog" aria-modal="true" aria-label="Team and permissions">
-      <header className="modal-header"><div><p className="eyebrow">{show.name}</p><h2>Team & Permissions</h2><p>Prototype permission planning. Database enforcement will be added with shared Supabase tables.</p></div><button className="icon-button" onClick={onClose}><X size={18}/></button></header>
-      <div className="template-row">{Object.entries(ROLE_TEMPLATES).map(([key, role]) => <div key={key} className="template-chip"><b>{role.label}</b><small>{role.description}</small></div>)}</div>
+      <header className="modal-header"><div><p className="eyebrow">{show.name}</p><h2>Team & Permissions</h2><p>Production owners control edit access per tool. Changes save to the shared production database.</p></div><button className="icon-button" onClick={onClose}><X size={18}/></button></header>
+      <div className="template-row"><div className="template-chip"><b>Owner</b><small>Full production, team, and tool administration.</small></div><div className="template-chip"><b>View</b><small>Can read shared production information without changing it.</small></div><div className="template-chip"><b>Edit / Admin</b><small>Can change that tool. Admin is reserved for tool leads.</small></div></div>
+      {canManage && <form className="permission-invite" onSubmit={invite}><label><span>Invite teammate</span><input type="email" value={inviteEmail} onChange={event=>setInviteEmail(event.target.value)} placeholder="name@production.com" required/></label><label><span>Membership</span><select value={inviteRole} onChange={event=>setInviteRole(event.target.value)}><option value="viewer">Viewer</option><option value="editor">Editor</option></select></label><button className="secondary" disabled={busy}><Send size={15}/> Send invite</button></form>}
       <div className="permission-table-wrap">
         <table className="permission-table">
-          <thead><tr><th>Teammate</th><th>Scope</th><th>Calendar</th><th>Scout Route</th><th>Location List</th><th>Budget</th><th>Bible</th><th>Waypoint</th><th>Invite</th></tr></thead>
-          <tbody>{rows.map(row => <tr key={row.id}>
+          <thead><tr><th>Teammate</th><th>Membership</th>{TOOL_PERMISSION_KEYS.map(toolKey=><th key={toolKey}>{TOOL_PERMISSION_LABELS[toolKey]}</th>)}</tr></thead>
+          <tbody>{loading?<tr><td colSpan={10}>Loading live access…</td></tr>:rows.map(row => <tr key={row.id}>
             <td><b>{row.name}</b><small>{row.email}</small></td>
-            <td><select value={row.scope} onChange={e=>updateRow(row.id,'scope',e.target.value)}><option>All locations</option><option>Assigned only</option><option>Assigned episodes</option><option>Specific locations</option></select></td>
-            {['calendar','scout','locations','budget','bible','waypoint'].map(field => <td key={field}><select value={row[field]} onChange={e=>updateRow(row.id,field,e.target.value)}><option>None</option><option>View</option><option>Edit</option><option>Assigned</option><option>Scout tracker</option><option>Totals only</option><option>Full</option></select></td>)}
-            <td><label className="switch-row"><input type="checkbox" checked={row.invite} onChange={e=>updateRow(row.id,'invite',e.target.checked)}/><span>{row.invite ? 'Yes' : 'No'}</span></label></td>
+            <td><span className={`membership-pill ${row.status}`}>{row.status==='pending'?'Pending':row.role}</span></td>
+            {TOOL_PERMISSION_KEYS.map(toolKey => <td key={toolKey}>{row.status==='pending'?<span className="permission-pending">—</span>:<select value={row.permissions[toolKey]} onChange={event=>updateRow(row.id,toolKey,event.target.value)} disabled={!canManage||row.role==='owner'||busy}><option value="view">View</option><option value="edit">Edit</option><option value="admin">Admin</option></select>}</td>)}
           </tr>)}</tbody>
         </table>
       </div>
-      <footer className="modal-footer"><span>{saved ? <><Check size={15}/> Saved locally</> : 'No live permissions changed'}</span><div><button className="secondary" onClick={onClose}>Close</button><button className="primary" onClick={save}>Save prototype</button></div></footer>
+      {message&&<div className="permission-message">{message}</div>}
+      <footer className="modal-footer"><span>{saved ? <><Check size={15}/> Live permissions saved</> : canManage ? 'Owner changes apply across the production' : 'Only the production owner can change access'}</span><div><button className="secondary" onClick={onClose}>Close</button>{canManage&&<button className="primary" onClick={save} disabled={busy||loading}>{busy?'Saving…':'Save permissions'}</button>}</div></footer>
     </section>
   </div>;
 }
 
-function Dashboard({ show, onBack }) {
+function Dashboard({ show, onBack, onOpenSetList }) {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const counts = useMemo(() => ({
     episodes: Array.isArray(show.episodes) ? show.episodes.length : 0,
@@ -243,8 +238,13 @@ function Dashboard({ show, onBack }) {
     <div className="section-title"><div><p className="eyebrow">TOOLS</p><h2>Production workspace</h2></div><div className="connected"><Users size={16}/> Shared show access</div></div>
     <section className="app-grid">
       {APPS.map(app => {
-        const Icon = app.icon; const url = envUrl(app.env, app.fallback); const enabled = Boolean(url);
+        const Icon = app.icon; const url = app.internal ? '' : envUrl(app.env, app.fallback); const enabled = app.internal || Boolean(url);
         const href = enabled ? toolUrl(app) : '';
+        if (app.internal) return <button key={app.key} className="app-card internal-tool-card" onClick={onOpenSetList}>
+          <span className={`app-icon ${app.key}`}><Icon size={27}/></span>
+          <div><h3>{app.title}</h3><p>{app.description}</p><small>{app.status}</small></div>
+          <ChevronRight className="chev"/>
+        </button>;
         return enabled ? <a key={app.key} className="app-card" href={href}>
           <span className={`app-icon ${app.key}`}><Icon size={27}/></span>
           <div><h3>{app.title}</h3><p>{app.description}</p><small>{app.status}</small></div>
@@ -268,6 +268,7 @@ function App() {
   const [activeShow, setActiveShow] = useState(null);
   const [error, setError] = useState('');
   const [showChooser, setShowChooser] = useState(false);
+  const [activeView, setActiveView] = useState('dashboard');
   const initialSelectionDone = useRef(false);
 
   async function load() {
@@ -277,8 +278,9 @@ function App() {
   }
   async function loadShows() {
     setLoading(true); setError('');
-    try { setShows(await fetchShows()); } catch (e) { setError(e.message); }
-    setLoading(false);
+    try { const next = await fetchShows(); setShows(next); return next; }
+    catch (e) { setError(e.message); return []; }
+    finally { setLoading(false); }
   }
   useEffect(() => { load(); if (!configured) return; const { data } = supabase.auth.onAuthStateChange((_event,s)=>setSession(s)); return ()=>data.subscription.unsubscribe(); }, []);
   useEffect(() => { if (session) loadShows(); else { setShows([]); setActiveShow(null); initialSelectionDone.current=false; } }, [session?.user?.id]);
@@ -293,10 +295,18 @@ function App() {
   if (!configured) return <main className="login-shell"><section className="login-card"><h1>Connect Supabase</h1><p>Add the same Supabase URL and anon key used by Scout Route to this project’s Vercel environment variables.</p></section></main>;
   if (!ready) return <div className="loading-screen">Loading Taylor Scout…</div>;
   if (!session) return <Login onReady={load}/>;
-  return <div className="app-shell">
-    <Header show={activeShow} onHome={()=>{ if (activeShow) return; const next=shows[0]; if(next){setActiveShow(next);setShowChooser(false);} }} onSignOut={()=>supabase.auth.signOut()}/>
+  const theme = activeShow?.theme || {};
+  const shellStyle = {'--ts-navy':theme.primary||'#061f33','--ts-navy-2':theme.secondary||'#0b2e46','--ts-teal':theme.accent||'#2fb5b2','--ts-font':theme.font||'Inter'};
+  async function productionCreated(showId, warnings) {
+    const nextShows = await loadShows();
+    const created = nextShows.find(show => show.id === showId);
+    if (created) { setActiveShow(created); setShowChooser(false); setActiveView('dashboard'); localStorage.setItem('ts-active-show-id', created.id); }
+    if (warnings?.length) setError(`Production created. ${warnings.length} invitation${warnings.length===1?'':'s'} need attention: ${warnings.join(' · ')}`);
+  }
+  return <div className="app-shell" style={shellStyle}>
+    <Header show={activeShow} onHome={()=>{ if (activeView!=='dashboard') return setActiveView('dashboard'); if (activeShow) return; const next=shows[0]; if(next){setActiveShow(next);setShowChooser(false);} }} onSignOut={()=>supabase.auth.signOut()}/>
     {error && <div className="error-banner">{error}</div>}
-    {activeShow && !showChooser ? <Dashboard show={activeShow} onBack={()=>{setShowChooser(true);setActiveShow(null);}}/> : <Shows shows={shows} loading={loading} onOpen={show=>{setActiveShow(show);setShowChooser(false);localStorage.setItem('ts-active-show-id',show.id)}}/>} 
+    {activeShow && !showChooser ? (activeView==='setlist' ? <SetListWorkspace show={activeShow} onBack={()=>setActiveView('dashboard')}/> : <Dashboard show={activeShow} onBack={()=>{setShowChooser(true);setActiveShow(null);setActiveView('dashboard');}} onOpenSetList={()=>setActiveView('setlist')}/>) : <Shows shows={shows} loading={loading} onCreated={productionCreated} onOpen={show=>{setActiveShow(show);setShowChooser(false);setActiveView('dashboard');localStorage.setItem('ts-active-show-id',show.id)}}/>}
   </div>;
 }
 

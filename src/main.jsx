@@ -224,6 +224,8 @@ function Dashboard({ show, onBack, onOpenSetList }) {
     target.searchParams.set('showId', show.id);
     target.searchParams.set('showName', show.name || '');
     target.searchParams.set('fromHub', '1');
+    const current = new URLSearchParams(window.location.search);
+    ['episode','episodeId','set','setId','location','locationId','budgetId'].forEach(key => { const value=current.get(key); if(value) target.searchParams.set(key,value); });
     if (app.key === 'scout') target.searchParams.set('tool', 'scout-route');
     return target.toString();
   }
@@ -286,9 +288,11 @@ function App() {
   useEffect(() => { if (session) loadShows(); else { setShows([]); setActiveShow(null); initialSelectionDone.current=false; } }, [session?.user?.id]);
   useEffect(() => {
     if (!session || loading || !shows.length || activeShow || showChooser || initialSelectionDone.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const requested = params.get('showId') || params.get('show');
     const remembered = localStorage.getItem('ts-active-show-id');
-    const next = shows.find(s => s.id === remembered) || shows[0];
-    if (next) { setActiveShow(next); localStorage.setItem('ts-active-show-id', next.id); }
+    const next = shows.find(s => s.id === requested) || shows.find(s => s.id === remembered) || shows[0];
+    if (next) { setActiveShow(next); localStorage.setItem('ts-active-show-id', next.id); const url=new URL(window.location.href); url.searchParams.set('show',next.id); url.searchParams.set('showId',next.id); url.searchParams.set('showName',next.name||''); window.history.replaceState({},'',url.toString()); }
     initialSelectionDone.current = true;
   }, [session, loading, shows, activeShow, showChooser]);
 
@@ -306,7 +310,7 @@ function App() {
   return <div className="app-shell" style={shellStyle}>
     <Header show={activeShow} onHome={()=>{ if (activeView!=='dashboard') return setActiveView('dashboard'); if (activeShow) return; const next=shows[0]; if(next){setActiveShow(next);setShowChooser(false);} }} onSignOut={()=>supabase.auth.signOut()}/>
     {error && <div className="error-banner">{error}</div>}
-    {activeShow && !showChooser ? (activeView==='setlist' ? <SetListWorkspace show={activeShow} onBack={()=>setActiveView('dashboard')}/> : <Dashboard show={activeShow} onBack={()=>{setShowChooser(true);setActiveShow(null);setActiveView('dashboard');}} onOpenSetList={()=>setActiveView('setlist')}/>) : <Shows shows={shows} loading={loading} onCreated={productionCreated} onOpen={show=>{setActiveShow(show);setShowChooser(false);setActiveView('dashboard');localStorage.setItem('ts-active-show-id',show.id)}}/>}
+    {activeShow && !showChooser ? (activeView==='setlist' ? <SetListWorkspace show={activeShow} onBack={()=>setActiveView('dashboard')}/> : <Dashboard show={activeShow} onBack={()=>{setShowChooser(true);setActiveShow(null);setActiveView('dashboard');}} onOpenSetList={()=>setActiveView('setlist')}/>) : <Shows shows={shows} loading={loading} onCreated={productionCreated} onOpen={show=>{setActiveShow(show);setShowChooser(false);setActiveView('dashboard');localStorage.setItem('ts-active-show-id',show.id);const url=new URL(window.location.href);url.searchParams.set('show',show.id);url.searchParams.set('showId',show.id);url.searchParams.set('showName',show.name||'');window.history.replaceState({},'',url.toString())}}/>}
   </div>;
 }
 

@@ -1,0 +1,48 @@
+name: Apply pre-audit workspace context
+on:
+  push:
+    paths:
+      - '.github/workflows/pre-audit-context.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch shared workspace context
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/main.jsx')
+          s=p.read_text()
+
+          old="    target.searchParams.set('fromHub', '1');\n    if (app.key === 'scout') target.searchParams.set('tool', 'scout-route');"
+          new="    target.searchParams.set('fromHub', '1');\n    const current = new URLSearchParams(window.location.search);\n    ['episode','episodeId','set','setId','location','locationId','budgetId'].forEach(key => { const value=current.get(key); if(value) target.searchParams.set(key,value); });\n    if (app.key === 'scout') target.searchParams.set('tool', 'scout-route');"
+          if old not in s: raise SystemExit('toolUrl context target not found')
+          s=s.replace(old,new,1)
+
+          old="    const remembered = localStorage.getItem('ts-active-show-id');\n    const next = shows.find(s => s.id === remembered) || shows[0];"
+          new="    const params = new URLSearchParams(window.location.search);\n    const requested = params.get('showId') || params.get('show');\n    const remembered = localStorage.getItem('ts-active-show-id');\n    const next = shows.find(s => s.id === requested) || shows.find(s => s.id === remembered) || shows[0];"
+          if old not in s: raise SystemExit('initial show context target not found')
+          s=s.replace(old,new,1)
+
+          old="    if (next) { setActiveShow(next); localStorage.setItem('ts-active-show-id', next.id); }"
+          new="    if (next) { setActiveShow(next); localStorage.setItem('ts-active-show-id', next.id); const url=new URL(window.location.href); url.searchParams.set('show',next.id); url.searchParams.set('showId',next.id); url.searchParams.set('showName',next.name||''); window.history.replaceState({},'',url.toString()); }"
+          if old not in s: raise SystemExit('show replaceState target not found')
+          s=s.replace(old,new,1)
+
+          old="onOpen={show=>{setActiveShow(show);setShowChooser(false);setActiveView('dashboard');localStorage.setItem('ts-active-show-id',show.id)}}"
+          new="onOpen={show=>{setActiveShow(show);setShowChooser(false);setActiveView('dashboard');localStorage.setItem('ts-active-show-id',show.id);const url=new URL(window.location.href);url.searchParams.set('show',show.id);url.searchParams.set('showId',show.id);url.searchParams.set('showName',show.name||'');window.history.replaceState({},'',url.toString())}}"
+          if old not in s: raise SystemExit('show chooser context target not found')
+          s=s.replace(old,new,1)
+
+          p.write_text(s)
+          PY
+      - name: Commit context hardening
+        run: |
+          git config user.name "Taylor Scout Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/main.jsx
+          git commit -m "Pre-audit hardening: carry workspace context across tools"
+          git push

@@ -5,6 +5,7 @@ import CrewMapsWorkspace from './crew-maps/CrewMapsDesignBoard';
 import './waypoint/waypoint-callout-polish.js';
 import './crew-maps/crew-maps-locked-hybrid.js';
 import './crew-maps/crew-maps-shell-viewport-fix.js';
+import './crew-maps/crew-maps-episode-select.js';
 import './crew-maps/crew-maps-canonical-shell.css';
 import './platform-brand-lock.css';
 import { configured, fetchShows, supabase } from './supabase';

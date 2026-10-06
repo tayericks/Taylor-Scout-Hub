@@ -183,7 +183,7 @@ export async function updateProductionSettings(showId, patch) {
 
 export const TOOL_PERMISSION_KEYS = [
   'set_list', 'calendar', 'scout_route', 'location_list',
-  'budget', 'bible', 'waypoint', 'wrap_book'
+  'budget', 'bible', 'waypoint', 'closer', 'wrap_book'
 ];
 
 export async function fetchShowTeamPermissions(showId) {

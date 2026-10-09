@@ -37,6 +37,11 @@ const APPS = [
     env: 'VITE_LOCATION_LIST_URL', fallback: 'https://locations.taylorscout.com', status: 'Open tool'
   },
   {
+    key: 'tech-scout', title: 'Tech Scout Notes', icon: ListChecks,
+    description: 'Capture and share department-by-department scout notes, photos, authors, timestamps, and action items.',
+    env: 'VITE_TECH_SCOUT_URL', fallback: '/tech-scout', status: 'Open tool'
+  },
+  {
     key: 'budget', title: 'Budget', icon: WalletCards,
     description: 'Create episode and set budgets, estimates, POs, commitments, and actuals.',
     env: 'VITE_BUDGET_URL', fallback: 'https://budget.taylorscout.com', status: 'Open tool'
@@ -55,11 +60,6 @@ const APPS = [
     key: 'crew-maps', title: 'Crew Maps', icon: FileText,
     description: 'Generate crew directional maps from Calendar, Bible, Location List, and Waypoint data.',
     env: 'VITE_CREW_MAPS_URL', fallback: '/crew-maps', status: 'Open tool'
-  },
-  {
-    key: 'tech-scout', title: 'Tech Scout Notes', icon: ListChecks,
-    description: 'Capture and share department-by-department scout notes, photos, authors, timestamps, and action items.',
-    env: 'VITE_TECH_SCOUT_URL', fallback: '/tech-scout', status: 'Open tool'
   }
 ];
 

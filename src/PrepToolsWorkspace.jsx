@@ -74,7 +74,15 @@ function buildDefaults(show, loc, bible) {
       posting:'',
       signerName:'',
       signerTitle:'',
-      signerPhone:''
+      signerPhone:'',
+      include:{
+        equipmentStaging:true,
+        parking:true,
+        generator:true,
+        sidewalkClosure:true,
+        curbLaneClosure:true,
+        posting:true
+      }
     },
     permitGrid:{
       preparedDate:new Date().toISOString().slice(0,10),
@@ -116,7 +124,39 @@ function buildDefaults(show, loc, bible) {
       intermittentPedestrianControl:'',
       specialEffects:'',
       notes:'',
-      safetyNotes:''
+      safetyNotes:'',
+      locationManagerInfo:'',
+      kalm:'',
+      kalmCloser:'',
+      almOpener:'',
+      lineProducer:'',
+      director:'',
+      firstAD:'',
+      episodeScenes:'',
+      areasOfUse:'',
+      prepDates:prepDays.filter(Boolean).map(shortDate).join(', '),
+      prepHours:'',
+      shootDates:shootDays.filter(Boolean).map(shortDate).join(', '),
+      shootHours:'',
+      strikeDates:strikeDays.filter(Boolean).map(shortDate).join(', '),
+      strikeHours:'',
+      holdDates:holdDays.filter(Boolean).map(shortDate).join(', '),
+      holdHours:'',
+      prepTruckParking:'',
+      prepTruckParkingDates:'',
+      prepCrewParking:'',
+      prepCrewParkingDates:'',
+      backgroundParking:'',
+      backgroundParkingDates:'',
+      displacementParking:'',
+      displacementParkingDates:'',
+      generatorPlacement:'',
+      generatorDates:'',
+      busStopBikeLane:'',
+      busStopBikeLaneDates:'',
+      effectsDates:'',
+      dateSubmitted:'',
+      filmingActivities:[]
     },
     ranges:{prepDays,shootDays,strikeDays,holdDays}
   };
@@ -175,6 +215,19 @@ function PrepMemoPreview({show,data}) {
   </article>;
 }
 
+function OptionalNeighborhoodField({label,field,data,setData,textarea=false,placeholder=''}) {
+  const included=data.include?.[field]!==false;
+  const updateInclude=value=>setData({...data,include:{...(data.include||{}),[field]:value}});
+  const updateValue=value=>setData({...data,[field]:value});
+  return <div className={`neighbor-option ${included?'included':'excluded'}`}>
+    <div className="neighbor-option-head">
+      <span>{label}</span>
+      <label className="include-toggle"><input type="checkbox" checked={included} onChange={e=>updateInclude(e.target.checked)}/><span>Include on letter</span></label>
+    </div>
+    {textarea?<textarea disabled={!included} value={data[field]||''} onChange={e=>updateValue(e.target.value)} placeholder={placeholder}/>:<input disabled={!included} value={data[field]||''} onChange={e=>updateValue(e.target.value)} placeholder={placeholder}/>}
+  </div>;
+}
+
 function NeighborhoodEditor({data,setData}) {
   const update=(key,value)=>setData({...data,[key]:value});
   return <div className="prep-editor-form">
@@ -187,14 +240,14 @@ function NeighborhoodEditor({data,setData}) {
       <Editable label="Prep hours" value={data.prepTimes} onChange={v=>update('prepTimes',v)}/>
       <Editable label="Filming hours" value={data.filmingTimes} onChange={v=>update('filmingTimes',v)} placeholder="e.g. 4AM – 11PM"/>
       <Editable label="Wrap hours" value={data.wrapTimes} onChange={v=>update('wrapTimes',v)}/>
-      <Editable label="Equipment staging" value={data.equipmentStaging} onChange={v=>update('equipmentStaging',v)}/>
-      <Editable label="Parking" value={data.parking} onChange={v=>update('parking',v)}/>
-      <Editable label="Generator" value={data.generator} onChange={v=>update('generator',v)}/>
-      <Editable label="Sidewalk closure" value={data.sidewalkClosure} onChange={v=>update('sidewalkClosure',v)}/>
-      <Editable label="Curb lane closure" value={data.curbLaneClosure} onChange={v=>update('curbLaneClosure',v)}/>
+      <OptionalNeighborhoodField label="Equipment staging" field="equipmentStaging" data={data} setData={setData}/>
+      <OptionalNeighborhoodField label="Parking" field="parking" data={data} setData={setData}/>
+      <OptionalNeighborhoodField label="Generator" field="generator" data={data} setData={setData}/>
+      <OptionalNeighborhoodField label="Sidewalk closure" field="sidewalkClosure" data={data} setData={setData}/>
+      <OptionalNeighborhoodField label="Curb lane closure" field="curbLaneClosure" data={data} setData={setData}/>
     </div>
     <Editable label="Activity" value={data.activity} onChange={v=>update('activity',v)} textarea/>
-    <Editable label="Posting" value={data.posting} onChange={v=>update('posting',v)} textarea/>
+    <OptionalNeighborhoodField label="Posting" field="posting" data={data} setData={setData} textarea/>
     <div className="prep-form-grid">
       <Editable label="Signer name" value={data.signerName} onChange={v=>update('signerName',v)}/>
       <Editable label="Title" value={data.signerTitle} onChange={v=>update('signerTitle',v)}/>
@@ -221,12 +274,12 @@ function NeighborhoodPreview({show,loc,common,ranges,data}) {
       <b>Wrap Days and Times:</b><span className="preline">{fmtRange(ranges.strikeDays,data.wrapTimes)}</span>
       <b>Hold Days:</b><span className="preline">{fmtRange(ranges.holdDays,'')}</span>
       <b>Activity:</b><span>{data.activity || '________________________________________'}</span>
-      <b>Equipment staging:</b><span>{data.equipmentStaging || '________________________________________'}</span>
-      <b>Parking:</b><span>{data.parking || '________________________________________'}</span>
-      <b>Generator:</b><span>{data.generator || '________________________________________'}</span>
-      <b>Sidewalk Closure:</b><span>{data.sidewalkClosure || '________________________________________'}</span>
-      <b>Curb Lane Closure:</b><span>{data.curbLaneClosure || '________________________________________'}</span>
-      <b>Posting:</b><span className="preline">{data.posting || '________________________________________'}</span>
+      {data.include?.equipmentStaging!==false&&<><b>Equipment staging:</b><span>{data.equipmentStaging || '________________________________________'}</span></>}
+      {data.include?.parking!==false&&<><b>Parking:</b><span>{data.parking || '________________________________________'}</span></>}
+      {data.include?.generator!==false&&<><b>Generator:</b><span>{data.generator || '________________________________________'}</span></>}
+      {data.include?.sidewalkClosure!==false&&<><b>Sidewalk Closure:</b><span>{data.sidewalkClosure || '________________________________________'}</span></>}
+      {data.include?.curbLaneClosure!==false&&<><b>Curb Lane Closure:</b><span>{data.curbLaneClosure || '________________________________________'}</span></>}
+      {data.include?.posting!==false&&<><b>Posting:</b><span className="preline">{data.posting || '________________________________________'}</span></>}
     </div>
     <p>Thank you for having us in your neighborhood and helping to keep filming in Los Angeles.</p>
     <p>Sincerely,<br/>{data.signerName || '________________________'}<br/>{data.signerTitle || '________________________'}<br/>{data.signerPhone || '________________________'}</p>
@@ -235,46 +288,84 @@ function NeighborhoodPreview({show,loc,common,ranges,data}) {
 }
 
 const GRID_FIELDS = [
-  ['LOCATION ACCESS','locationAccess'],['ENLA','enla'],['ENLA (phone)','enlaPhone'],['ENLA (contact)','enlaContact'],
-  ['BLOCK','block'],['CURB COUNT','curbCount'],['SET NAME','setName'],['CREW COUNT','crewCount'],
-  ['INTERIOR AND EXTERIOR','interiorExterior'],['BACKGROUND COUNT','backgroundCount'],['FILMING ACTIVITY','filmingActivity'],['AERIAL OR SFX','aerialOrSfx'],
-  ['PERMIT AGENCY','permitAgency'],['PERMIT DATE','permitDate'],['PERMIT HOURS','permitHours'],['PERMIT NUMBER','permitNumber'],
-  ['PREP BASECAMP','basecampName'],['PREP BASECAMP ADDRESS','basecampAddress'],['PREP BASECAMP DATES/TIMES','basecampDates'],
+  ['LOCATION MANAGER INFO','locationManagerInfo'],['KALM','kalm'],['KALM (closer)','kalmCloser'],['ALM (opener)','almOpener'],
+  ['LINE PRODUCER','lineProducer'],['DIRECTOR','director'],['1st AD','firstAD'],['EPISODE AND SCENE','episodeScenes'],
+  ['BLOCK','block'],['SET NAME','setName'],['CREW COUNT','crewCount'],['CAST COUNT','castCount'],['BACKGROUND COUNT','backgroundCount'],
+  ['FILMING ACTIVITY','filmingActivity'],['AREAS OF USE','areasOfUse'],
+  ['PREP DATES','prepDates'],['PREP HOURS','prepHours'],['SHOOT DATES','shootDates'],['SHOOT HOURS','shootHours'],
+  ['STRIKE DATES','strikeDates'],['STRIKE HOURS','strikeHours'],['HOLD DATES','holdDates'],['HOLD HOURS','holdHours'],
+  ['PREP TRUCK PARKING','prepTruckParking'],['PREP TRUCK PARKING DATES/TIMES','prepTruckParkingDates'],
+  ['PREP CREW PARKING','prepCrewParking'],['PREP CREW PARKING DATES/TIMES','prepCrewParkingDates'],
+  ['BASECAMP','basecampName'],['BASECAMP ADDRESS','basecampAddress'],['BASECAMP DATES/TIMES','basecampDates'],
   ['CREW PARKING','crewParkingName'],['CREW PARKING ADDRESS','crewParkingAddress'],['CREW PARKING DATES/TIMES','crewParkingDates'],
+  ['BACKGROUND PARKING','backgroundParking'],['BACKGROUND PARKING DATES/TIMES','backgroundParkingDates'],
+  ['PICTURE CAR PARKING','pictureCarParking'],['WORK TRUCK / OVERFLOW PARKING','truckOverflowParking'],
   ['CATERING','cateringName'],['CATERING ADDRESS','cateringAddress'],['CATERING DATES/TIMES','cateringDates'],
-  ['RESTROOMS','restroomLocation'],['EQUIPMENT PARKING','equipmentParking'],['PICTURE CAR PARKING','pictureCarParking'],['TRUCK / OVERFLOW PARKING','truckOverflowParking'],
-  ['POSTING FOR PREP / CREW','postingForPrepCrew'],['POSTING FOR SHOOT','postingForShoot'],
-  ['CLOSED STREET','closedStreet'],['LANE CLOSURE','laneClosure'],['SIDEWALK CLOSURE','sidewalkClosure'],
+  ['DISPLACEMENT PARKING','displacementParking'],['DISPLACEMENT PARKING DATES/TIMES','displacementParkingDates'],
+  ['GENERATOR PLACEMENT','generatorPlacement'],['GENERATOR DATES/TIMES','generatorDates'],
+  ['POSTING FOR PREP/STRIKE','postingForPrepCrew'],['POSTING FOR SHOOT','postingForShoot'],
+  ['LANE CLOSURE, FULL/PARTIAL','laneClosure'],['SIDEWALK CLOSURE','sidewalkClosure'],['BUS STOP REMOVAL / BIKE LANE','busStopBikeLane'],
   ['INTERMITTENT TRAFFIC CONTROL (ITC)','intermittentTrafficControl'],['INTERMITTENT PEDESTRIAN CONTROL (IPC)','intermittentPedestrianControl'],
-  ['SPECIAL EFFECTS','specialEffects'],['NOTES','notes'],['SAFETY NOTES','safetyNotes']
+  ['EFFECTS','specialEffects'],['EFFECTS DATES/TIMES','effectsDates'],['NOTES','notes'],['DATE SUBMITTED','dateSubmitted'],['SAFETY NOTES','safetyNotes']
+];
+
+const FILMING_ACTIVITIES = [
+  'Aerial Photography with remote control aircraft (UAS)','Animal on set','Atmospheric smoke effects (water based)',
+  'Brandishing weapons','Brandishing weapons (not in public view)','Camera in car','Camera on sticks','Car-to-Car',
+  'Crossovers in street','Drive by','Drive ups & away','Driving shots','Driving shots with the flow of traffic',
+  'Emergency vehicles with flashing lights','Equipment across street','Equipment on property','Equipment on sand',
+  'Equipment on sidewalk & street','Equipment on sidewalk only','Equipment on sidewalk, in curb lane & across street',
+  'Extended run, holding intersections','Exterior Dialogue','Exterior establishing shots','Exterior models against scenery',
+  'Exterior motion without sound','Exterior music performance and amplified playback','Generators','Handheld equipment',
+  'Helicopter activity','Helicopter landing & take off','Interior and exterior dialogue','Interior and exterior motion without sound',
+  'Interior and exterior music performance and amplified playback','Interior Dialogue','Interior models against scenery',
+  'Interior motion without sound','Interior music performance and amplified playback','Intermittent pedestrian control',
+  'Intermittent traffic control - 2 minute standard','Intermittent traffic control - 90 seconds standard','Near hits & misses',
+  'Precision driving','Process Trailer','Rain effects','Rooftop activity','Running & tow shots','Smoking herbal cigarettes',
+  'Talent in police uniforms','Wetdown','Wind effects'
 ];
 
 function PermitGridEditor({data,setData}) {
   const update=(key,value)=>setData({...data,[key]:value});
+  const toggleActivity=value=>{
+    const current=new Set(data.filmingActivities||[]);
+    current.has(value)?current.delete(value):current.add(value);
+    setData({...data,filmingActivities:[...current],filmingActivity:[...current].join(', ')});
+  };
   return <div className="prep-editor-form permit-form">
     <div className="prep-form-grid"><label className="prep-field"><span>Prepared date</span><input type="date" value={data.preparedDate} onChange={e=>update('preparedDate',e.target.value)}/></label></div>
-    <div className="permit-editor-grid">{GRID_FIELDS.map(([label,key])=><Editable key={key} label={label} value={data[key]||''} onChange={v=>update(key,v)} textarea={['filmingActivity','notes','safetyNotes'].includes(key)}/>)}</div>
+    <div className="permit-editor-grid">{GRID_FIELDS.map(([label,key])=><Editable key={key} label={label} value={data[key]||''} onChange={v=>update(key,v)} textarea={['filmingActivity','areasOfUse','notes','safetyNotes'].includes(key)}/>)}</div>
+    <div className="prep-subhead">FILMING ACTIVITIES</div>
+    <div className="filming-activity-checklist">{FILMING_ACTIVITIES.map(item=><label key={item}><input type="checkbox" checked={(data.filmingActivities||[]).includes(item)} onChange={()=>toggleActivity(item)}/><span>{item}</span></label>)}</div>
   </div>;
 }
 
 function PermitGridPreview({show,common,data}) {
   const row=(label,val)=><div className="permit-row" key={label}><b>{label}</b><span>{val || ''}</span></div>;
+  const rows=labels=>labels.map(label=>row(label,data[GRID_FIELDS.find(x=>x[0]===label)?.[1]]));
   return <article className="prep-preview permit-preview">
-    <div className="permit-title-row"><div>{show.logo?<img src={show.logo} alt=""/>:<b>{show.name}</b>}</div><div><b>{show.name}</b><span>{show.company}</span></div><div><b>{dateFmt(data.preparedDate)}</b></div></div>
+    <div className="permit-title-row"><div>{show.logo?<img src={show.logo} alt=""/>:<b>{show.name}</b>}</div><div><b>{show.company || show.name}</b><span>{show.productionOffice?.address||''}</span></div><div><b>as of {shortDate(data.preparedDate)}</b></div></div>
+    <div className="permit-section-title">LOCATION MANAGER INFO</div>
+    {rows(['LOCATION MANAGER INFO','KALM','KALM (closer)','ALM (opener)','LINE PRODUCER','DIRECTOR','1st AD'])}
     <div className="permit-section-title">LOCATION INFORMATION</div>
-    {row('LOCATION',common.locationName)}{row('ADDRESS',common.locationAddress)}
-    <div className="permit-section-title">LOCATION ACCESS / CONTACT</div>
-    {['LOCATION ACCESS','ENLA','ENLA (phone)','ENLA (contact)'].map(label=>row(label,data[GRID_FIELDS.find(x=>x[0]===label)?.[1]]))}
+    {row('LOCATION ADDRESS',common.locationAddress)}{rows(['EPISODE AND SCENE'])}
     <div className="permit-section-title">DESCRIPTION</div>
-    {['BLOCK','CURB COUNT','SET NAME','CREW COUNT','INTERIOR AND EXTERIOR','BACKGROUND COUNT','FILMING ACTIVITY','AERIAL OR SFX'].map(label=>row(label,data[GRID_FIELDS.find(x=>x[0]===label)?.[1]]))}
-    <div className="permit-section-title">PERMIT / POLICE / FIRE</div>
-    {['PERMIT AGENCY','PERMIT DATE','PERMIT HOURS','PERMIT NUMBER'].map(label=>row(label,data[GRID_FIELDS.find(x=>x[0]===label)?.[1]]))}
-    <div className="permit-section-title">PARKING / BASECAMP / SUPPORT</div>
-    {['PREP BASECAMP','PREP BASECAMP ADDRESS','PREP BASECAMP DATES/TIMES','CREW PARKING','CREW PARKING ADDRESS','CREW PARKING DATES/TIMES','CATERING','CATERING ADDRESS','CATERING DATES/TIMES','RESTROOMS','EQUIPMENT PARKING','PICTURE CAR PARKING','TRUCK / OVERFLOW PARKING'].map(label=>row(label,data[GRID_FIELDS.find(x=>x[0]===label)?.[1]]))}
-    <div className="permit-section-title">POSTING / CLOSURES / CONTROL</div>
-    {['POSTING FOR PREP / CREW','POSTING FOR SHOOT','CLOSED STREET','LANE CLOSURE','SIDEWALK CLOSURE','INTERMITTENT TRAFFIC CONTROL (ITC)','INTERMITTENT PEDESTRIAN CONTROL (IPC)','SPECIAL EFFECTS'].map(label=>row(label,data[GRID_FIELDS.find(x=>x[0]===label)?.[1]]))}
-    <div className="permit-section-title">NOTES</div>{row('NOTES',data.notes)}
-    <div className="permit-section-title safety">SAFETY NOTES</div>{row('SAFETY NOTES',data.safetyNotes)}
+    {rows(['BLOCK','SET NAME','CREW COUNT','CAST COUNT','BACKGROUND COUNT','FILMING ACTIVITY','AREAS OF USE'])}
+    <div className="permit-section-title">PREP / SHOOT / STRIKE</div>
+    {rows(['PREP DATES','PREP HOURS','SHOOT DATES','SHOOT HOURS','STRIKE DATES','STRIKE HOURS','HOLD DATES','HOLD HOURS'])}
+    <div className="permit-section-title">PREP PARKING</div>
+    {rows(['PREP TRUCK PARKING','PREP TRUCK PARKING DATES/TIMES','PREP CREW PARKING','PREP CREW PARKING DATES/TIMES'])}
+    <div className="permit-section-title">SHOOT PARKING</div>
+    {rows(['BASECAMP','BASECAMP ADDRESS','BASECAMP DATES/TIMES','CREW PARKING','CREW PARKING ADDRESS','CREW PARKING DATES/TIMES','BACKGROUND PARKING','BACKGROUND PARKING DATES/TIMES','PICTURE CAR PARKING','WORK TRUCK / OVERFLOW PARKING','CATERING','CATERING ADDRESS','CATERING DATES/TIMES','DISPLACEMENT PARKING','DISPLACEMENT PARKING DATES/TIMES','GENERATOR PLACEMENT','GENERATOR DATES/TIMES'])}
+    <div className="permit-section-title">POSTING FOR PREP / STRIKE</div>{rows(['POSTING FOR PREP/STRIKE'])}
+    <div className="permit-section-title">POSTING FOR SHOOT</div>{rows(['POSTING FOR SHOOT'])}
+    <div className="permit-section-title">CLOSURES</div>{rows(['LANE CLOSURE, FULL/PARTIAL','SIDEWALK CLOSURE','BUS STOP REMOVAL / BIKE LANE'])}
+    <div className="permit-section-title">INTERMITTENT CONTROL (IPC / ITC)</div>{rows(['INTERMITTENT TRAFFIC CONTROL (ITC)','INTERMITTENT PEDESTRIAN CONTROL (IPC)'])}
+    <div className="permit-section-title">EFFECTS</div>{rows(['EFFECTS','EFFECTS DATES/TIMES'])}
+    <div className="permit-section-title">NOTES</div>{rows(['NOTES','DATE SUBMITTED'])}
+    <div className="permit-section-title safety">FILMING ACTIVITIES</div>
+    <div className="permit-activity-grid">{FILMING_ACTIVITIES.map(item=><span key={item} className={(data.filmingActivities||[]).includes(item)?'selected':''}>{(data.filmingActivities||[]).includes(item)?'☑':'☐'} {item}</span>)}</div>
+    <div className="permit-section-title safety">SAFETY NOTES</div>{rows(['SAFETY NOTES'])}
   </article>;
 }
 

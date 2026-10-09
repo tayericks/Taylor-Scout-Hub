@@ -273,3 +273,20 @@ button,input,select,textarea{font-family:var(--ts-font)!important;border-radius:
   body.prep-printing .permit-preview{padding:.2in}
   @page{size:letter portrait;margin:0}
 }
+
+.neighbor-option{display:grid;gap:6px}
+.neighbor-option-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.neighbor-option-head>span{font-size:10px;font-weight:900;letter-spacing:.1em;color:#667b89}
+.include-toggle{display:flex;align-items:center;gap:6px;font-size:9px;color:#526b79;white-space:nowrap}
+.include-toggle input{width:16px;height:16px;accent-color:var(--ts-teal)}
+.neighbor-option input,.neighbor-option textarea{width:100%;border:1px solid #c7d5dc;border-radius:8px;background:#fff;padding:10px 11px;font:inherit;color:#142a3b}
+.neighbor-option textarea{min-height:74px;resize:vertical}
+.neighbor-option.excluded{opacity:.48}
+.neighbor-option.excluded input,.neighbor-option.excluded textarea{background:#eef2f4}
+.filming-activity-checklist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 12px;padding:10px;border:1px solid #ccd9df;border-radius:9px;background:#fff}
+.filming-activity-checklist label{display:flex;gap:7px;align-items:flex-start;font-size:10px;line-height:1.3;color:#314957}
+.filming-activity-checklist input{margin-top:1px;accent-color:var(--ts-teal)}
+.permit-activity-grid{display:grid;grid-template-columns:1fr 1fr;border-left:1.5px solid #111;border-right:1.5px solid #111;border-bottom:1.5px solid #111}
+.permit-activity-grid span{padding:3px 5px;border-bottom:1px solid #aaa;font-size:7.5px;line-height:1.25}
+.permit-activity-grid span:nth-child(odd){border-right:1px solid #aaa}
+.permit-activity-grid span.selected{font-weight:800;background:#f2f8fc}

@@ -298,3 +298,34 @@ export async function submitShowRequest(request) {
   throwIf(error);
   return data;
 }
+
+
+export async function fetchPrepToolContext(showId) {
+  if (!configured || !showId) return { locations: [], bibles: {}, drafts: {} };
+  const [locationsResult, bibleResult, draftResult] = await Promise.all([
+    supabase.from('production_locations').select('*').eq('show_id', showId).order('location_name'),
+    supabase.from('tool_documents').select('tool_key,payload,updated_at').eq('show_id', showId).like('tool_key', 'bible-location:%'),
+    supabase.from('tool_documents').select('tool_key,payload,updated_at').eq('show_id', showId).like('tool_key', 'prep-tools:%')
+  ]);
+  [locationsResult, bibleResult, draftResult].forEach(result => throwIf(result.error));
+  const bibles = Object.fromEntries((bibleResult.data || []).map(row => [
+    row.tool_key.slice('bible-location:'.length),
+    row.payload?.record || row.payload || {}
+  ]));
+  const drafts = Object.fromEntries((draftResult.data || []).map(row => [
+    row.tool_key.slice('prep-tools:'.length),
+    row.payload?.drafts || row.payload || {}
+  ]));
+  return { locations: locationsResult.data || [], bibles, drafts };
+}
+
+export async function savePrepToolDraft(showId, locationId, drafts) {
+  if (!configured || !showId || !locationId) throw new Error('Missing Prep Tools save context.');
+  const { data, error } = await supabase.from('tool_documents').upsert({
+    show_id: showId,
+    tool_key: `prep-tools:${locationId}`,
+    payload: { version: 1, locationId, drafts, updatedAt: new Date().toISOString() }
+  }, { onConflict: 'show_id,tool_key' }).select('updated_at').single();
+  throwIf(error);
+  return data;
+}

@@ -196,7 +196,7 @@ function PermissionsModal({ show, onClose }) {
       <div className="permission-table-wrap">
         <table className="permission-table">
           <thead><tr><th>Teammate</th><th>Membership</th>{TOOL_PERMISSION_KEYS.map(toolKey=><th key={toolKey}>{TOOL_PERMISSION_LABELS[toolKey]}</th>)}</tr></thead>
-          <tbody>{loading?<tr><td colSpan={10}>Loading live access…</td></tr>:rows.map(row => <tr key={row.id}>
+          <tbody>{loading?<tr><td colSpan={11}>Loading live access…</td></tr>:rows.map(row => <tr key={row.id}>
             <td><b>{row.name}</b><small>{row.email}</small></td>
             <td><span className={`membership-pill ${row.status}`}>{row.status==='pending'?'Pending':row.role}</span></td>
             {TOOL_PERMISSION_KEYS.map(toolKey => <td key={toolKey}>{row.status==='pending'?<span className="permission-pending">—</span>:<select value={row.permissions[toolKey]} onChange={event=>updateRow(row.id,toolKey,event.target.value)} disabled={!canManage||row.role==='owner'||busy}><option value="view">View</option><option value="edit">Edit</option><option value="admin">Admin</option></select>}</td>)}

@@ -31,7 +31,7 @@ function buildUnits(form) {
 export default function CreateProductionWizard({ onClose, onCreated }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
-    name: '', productionType: 'episodic', season: '', company: '', signCode: '',
+    name: '', productionType: 'episodic', season: '', company: '', signCode: '', productionOfficeAddress: '', studioAddress: '',
     structure: '101', logo: '', primary: '#061f33', secondary: '#0b2e46', accent: '#2fb5b2',
     font: 'Inter', inviteEmails: '', startMode: 'blank'
   });
@@ -75,7 +75,7 @@ export default function CreateProductionWizard({ onClose, onCreated }) {
         logo: form.logo,
         units,
         theme: { primary: form.primary, secondary: form.secondary, accent: form.accent, font: form.font },
-        preferences: { start_mode: form.startMode },
+        preferences: { start_mode: form.startMode, production_office: { name: 'Production Office', address: form.productionOfficeAddress.trim() }, studio: { name: 'Studio / Stage', address: form.studioAddress.trim() } },
         invites
       });
       onCreated(result.showId, result.warnings || []);
@@ -103,6 +103,8 @@ export default function CreateProductionWizard({ onClose, onCreated }) {
             <label>Season / project label<input value={form.season} onChange={e=>update('season',e.target.value)} placeholder="Season 1 or Summer Campaign"/></label>
             <label>Production company<input value={form.company} onChange={e=>update('company',e.target.value)} placeholder="Company or studio"/></label>
             <label className="span-two">Yellow sign code<input value={form.signCode} onChange={e=>update('signCode',e.target.value)} placeholder="Example: ED"/></label>
+            <label className="span-two">Production office address<input value={form.productionOfficeAddress} onChange={e=>update('productionOfficeAddress',e.target.value)} placeholder="Example: 4024 Radford Ave, Studio City, CA 91604"/></label>
+            <label className="span-two">Studio / stage address<input value={form.studioAddress} onChange={e=>update('studioAddress',e.target.value)} placeholder="Primary studio, stage campus, or production base"/></label>
           </div>
           <div className="production-type-grid">{TYPES.map(([value,label,copy]) => <button type="button" key={value} className={form.productionType===value?'selected':''} onClick={()=>update('productionType',value)}><b>{label}</b><span>{copy}</span></button>)}</div>
         </div>}
@@ -140,6 +142,8 @@ export default function CreateProductionWizard({ onClose, onCreated }) {
           </section>
           <section className="review-list">
             <div><span>Structure</span><b>{units.length ? `${units.length} ${form.productionType==='episodic'?'episodes':'units / spots'}` : 'Single production'}</b></div>
+            <div><span>Production office</span><b>{form.productionOfficeAddress || 'Not entered'}</b></div>
+            <div><span>Studio / stage</span><b>{form.studioAddress || 'Not entered'}</b></div>
             <div><span>Set List</span><b>Ready for manual entry, bulk paste, hierarchy, scenes, and cross-episode sets</b></div>
             <div><span>Team</span><b>{splitLines(form.inviteEmails).length ? `${splitLines(form.inviteEmails).length} invitation(s)` : 'Owner only for now'}</b></div>
             <div><span>Data flow</span><b>Set List becomes the source for Location List and downstream tools</b></div>

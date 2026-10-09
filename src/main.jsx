@@ -55,13 +55,18 @@ const APPS = [
     key: 'crew-maps', title: 'Crew Maps', icon: FileText,
     description: 'Generate crew directional maps from Calendar, Bible, Location List, and Waypoint data.',
     env: 'VITE_CREW_MAPS_URL', fallback: '/crew-maps', status: 'Open tool'
+  },
+  {
+    key: 'tech-scout', title: 'Tech Scout Notes', icon: ListChecks,
+    description: 'Capture and share department-by-department scout notes, photos, authors, timestamps, and action items.',
+    env: 'VITE_TECH_SCOUT_URL', fallback: '/tech-scout', status: 'Open tool'
   }
 ];
 
 const TOOL_PERMISSION_LABELS = {
   set_list: 'Set List', calendar: 'Calendar', scout_route: 'Scout Route',
   location_list: 'Location List', budget: 'Budget', bible: 'Bible',
-  waypoint: 'Waypoint', wrap_book: 'Wrap Book'
+  waypoint: 'Waypoint', tech_scout: 'Tech Scout Notes', wrap_book: 'Wrap Book'
 };
 
 function envUrl(name, fallback) {
@@ -72,6 +77,7 @@ function envUrl(name, fallback) {
     VITE_BUDGET_URL: import.meta.env.VITE_BUDGET_URL,
     VITE_WAYPOINT_URL: import.meta.env.VITE_WAYPOINT_URL,
     VITE_CREW_MAPS_URL: import.meta.env.VITE_CREW_MAPS_URL,
+    VITE_TECH_SCOUT_URL: import.meta.env.VITE_TECH_SCOUT_URL,
     VITE_BIBLE_URL: import.meta.env.VITE_BIBLE_URL,
   };
   return (map[name] || fallback || '').trim();

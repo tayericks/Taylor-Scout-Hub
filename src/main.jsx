@@ -37,6 +37,11 @@ const APPS = [
     env: 'VITE_LOCATION_LIST_URL', fallback: 'https://locations.taylorscout.com', status: 'Open tool'
   },
   {
+    key: 'tech-scout', title: 'Tech Scout Notes', icon: ListChecks,
+    description: 'Capture and share department-by-department scout notes, photos, authors, timestamps, and action items.',
+    env: 'VITE_TECH_SCOUT_URL', fallback: '/tech-scout', status: 'Open tool'
+  },
+  {
     key: 'budget', title: 'Budget', icon: WalletCards,
     description: 'Create episode and set budgets, estimates, POs, commitments, and actuals.',
     env: 'VITE_BUDGET_URL', fallback: 'https://budget.taylorscout.com', status: 'Open tool'
@@ -61,7 +66,7 @@ const APPS = [
 const TOOL_PERMISSION_LABELS = {
   set_list: 'Set List', calendar: 'Calendar', scout_route: 'Scout Route',
   location_list: 'Location List', budget: 'Budget', bible: 'Bible',
-  waypoint: 'Waypoint', wrap_book: 'Wrap Book'
+  waypoint: 'Waypoint', tech_scout: 'Tech Scout Notes', wrap_book: 'Wrap Book'
 };
 
 function envUrl(name, fallback) {
@@ -72,6 +77,7 @@ function envUrl(name, fallback) {
     VITE_BUDGET_URL: import.meta.env.VITE_BUDGET_URL,
     VITE_WAYPOINT_URL: import.meta.env.VITE_WAYPOINT_URL,
     VITE_CREW_MAPS_URL: import.meta.env.VITE_CREW_MAPS_URL,
+    VITE_TECH_SCOUT_URL: import.meta.env.VITE_TECH_SCOUT_URL,
     VITE_BIBLE_URL: import.meta.env.VITE_BIBLE_URL,
   };
   return (map[name] || fallback || '').trim();
@@ -190,7 +196,7 @@ function PermissionsModal({ show, onClose }) {
       <div className="permission-table-wrap">
         <table className="permission-table">
           <thead><tr><th>Teammate</th><th>Membership</th>{TOOL_PERMISSION_KEYS.map(toolKey=><th key={toolKey}>{TOOL_PERMISSION_LABELS[toolKey]}</th>)}</tr></thead>
-          <tbody>{loading?<tr><td colSpan={10}>Loading live access…</td></tr>:rows.map(row => <tr key={row.id}>
+          <tbody>{loading?<tr><td colSpan={11}>Loading live access…</td></tr>:rows.map(row => <tr key={row.id}>
             <td><b>{row.name}</b><small>{row.email}</small></td>
             <td><span className={`membership-pill ${row.status}`}>{row.status==='pending'?'Pending':row.role}</span></td>
             {TOOL_PERMISSION_KEYS.map(toolKey => <td key={toolKey}>{row.status==='pending'?<span className="permission-pending">—</span>:<select value={row.permissions[toolKey]} onChange={event=>updateRow(row.id,toolKey,event.target.value)} disabled={!canManage||row.role==='owner'||busy}><option value="view">View</option><option value="edit">Edit</option><option value="admin">Admin</option></select>}</td>)}

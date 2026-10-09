@@ -50,7 +50,9 @@ export async function fetchShows() {
       logo: production.logo_url || legacy.logo || '',
       coverImage: production.cover_image_url || '',
       theme: production.theme || null,
-      preferences: production.preferences || {}
+      preferences: production.preferences || {},
+      productionOffice: production.preferences?.production_office || legacy.productionOffice || { name:'Production Office', address:'' },
+      studio: production.preferences?.studio || legacy.studio || { name:'Studio / Stage', address:'' }
     };
   });
 }

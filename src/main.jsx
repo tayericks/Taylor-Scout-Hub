@@ -12,6 +12,7 @@ import {
 import CreateProductionWizard from './CreateProductionWizard';
 import SetListWorkspace from './SetListWorkspace';
 import CloserWorkspace from './CloserWorkspace';
+import PrepToolsWorkspace from './PrepToolsWorkspace';
 import './styles.css';
 
 function TaylorScoutLogo({compact=false}) { return <span className={`ts-logo ${compact?'compact':''}`} aria-label="Taylor Scout"><svg viewBox="0 0 74 92" role="img" aria-hidden="true"><path className="pin-outline" d="M37 3C18 3 5 17 5 36c0 22 17 40 32 53 15-13 32-31 32-53C69 17 56 3 37 3Z"/><path className="mountain" d="M16 39l15-13 8 7 10-10 12 14-12-8-10 10-8-7-15 7Z"/><path className="road" d="M19 69c12-14 24-18 31-27-3 14-12 22-20 31l7 8-9 2-9-14Z"/><path className="star" d="M21 17l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"/></svg><span className="ts-wordmark"><b>TAYLOR SCOUT</b><small>PRODUCTION TOOLS</small></span></span> }
@@ -43,9 +44,9 @@ const APPS = [
     env: 'VITE_BUDGET_URL', fallback: 'https://budget.taylorscout.com', status: 'Open tool'
   },
   {
-    key: 'bible', title: 'Location Bible', icon: BookOpen,
-    description: 'Run vendor orders, contacts, permits, schedules, and closer logistics.',
-    env: 'VITE_BIBLE_URL', fallback: 'https://bible.taylorscout.com', status: 'Open tool'
+    key: 'prep-tools', title: 'Prep Tools', icon: BookOpen, internal: true,
+    description: 'Open the Location Bible and generate prep memos, permit grids, neighborhood letters, safety forms, and shoot documents.',
+    status: 'Open folder'
   },
   {
     key: 'closer', title: 'Closer', icon: ClipboardCheck, internal: true,
@@ -209,7 +210,7 @@ function PermissionsModal({ show, onClose }) {
   </div>;
 }
 
-function Dashboard({ show, onBack, onOpenSetList, onOpenCloser }) {
+function Dashboard({ show, onBack, onOpenSetList, onOpenCloser, onOpenPrepTools }) {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const counts = useMemo(() => ({
     episodes: Array.isArray(show.episodes) ? show.episodes.length : 0,
@@ -248,7 +249,7 @@ function Dashboard({ show, onBack, onOpenSetList, onOpenCloser }) {
       {APPS.map(app => {
         const Icon = app.icon; const url = app.internal ? '' : envUrl(app.env, app.fallback); const enabled = app.internal || Boolean(url);
         const href = enabled ? toolUrl(app) : '';
-        if (app.internal) return <button key={app.key} className="app-card internal-tool-card" onClick={app.key==='closer'?onOpenCloser:onOpenSetList}>
+        if (app.internal) return <button key={app.key} className="app-card internal-tool-card" onClick={app.key==='closer'?onOpenCloser:app.key==='prep-tools'?onOpenPrepTools:onOpenSetList}>
           <span className={`app-icon ${app.key}`}><Icon size={27}/></span>
           <div><h3>{app.title}</h3><p>{app.description}</p><small>{app.status}</small></div>
           <ChevronRight className="chev"/>
@@ -316,7 +317,7 @@ function App() {
   return <div className="app-shell" style={shellStyle}>
     <Header show={activeShow} onHome={()=>{ if (activeView!=='dashboard') return setActiveView('dashboard'); if (activeShow) return; const next=shows[0]; if(next){setActiveShow(next);setShowChooser(false);} }} onSignOut={()=>supabase.auth.signOut()}/>
     {error && <div className="error-banner">{error}</div>}
-    {activeShow && !showChooser ? (activeView==='setlist' ? <SetListWorkspace show={activeShow} onBack={()=>setActiveView('dashboard')}/> : activeView==='closer' ? <CloserWorkspace show={activeShow} onBack={()=>setActiveView('dashboard')}/> : <Dashboard show={activeShow} onBack={()=>{setShowChooser(true);setActiveShow(null);setActiveView('dashboard');}} onOpenSetList={()=>setActiveView('setlist')} onOpenCloser={()=>setActiveView('closer')}/>) : <Shows shows={shows} loading={loading} onCreated={productionCreated} onOpen={show=>{setActiveShow(show);setShowChooser(false);setActiveView('dashboard');localStorage.setItem('ts-active-show-id',show.id);const url=new URL(window.location.href);url.searchParams.set('show',show.id);url.searchParams.set('showId',show.id);url.searchParams.set('showName',show.name||'');window.history.replaceState({},'',url.toString())}}/>}
+    {activeShow && !showChooser ? (activeView==='setlist' ? <SetListWorkspace show={activeShow} onBack={()=>setActiveView('dashboard')}/> : activeView==='closer' ? <CloserWorkspace show={activeShow} onBack={()=>setActiveView('dashboard')}/> : activeView==='prep-tools' ? <PrepToolsWorkspace show={activeShow} onBack={()=>setActiveView('dashboard')}/> : <Dashboard show={activeShow} onBack={()=>{setShowChooser(true);setActiveShow(null);setActiveView('dashboard');}} onOpenSetList={()=>setActiveView('setlist')} onOpenCloser={()=>setActiveView('closer')} onOpenPrepTools={()=>setActiveView('prep-tools')}/>) : <Shows shows={shows} loading={loading} onCreated={productionCreated} onOpen={show=>{setActiveShow(show);setShowChooser(false);setActiveView('dashboard');localStorage.setItem('ts-active-show-id',show.id);const url=new URL(window.location.href);url.searchParams.set('show',show.id);url.searchParams.set('showId',show.id);url.searchParams.set('showName',show.name||'');window.history.replaceState({},'',url.toString())}}/>}
   </div>;
 }
 

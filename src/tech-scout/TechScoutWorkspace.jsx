@@ -212,14 +212,19 @@ export default function TechScoutWorkspace({ show, onBack }) {
       setDepartments(nextDepartments.sort((a,b)=>a.sort_order-b.sort_order));
       setNotes(noteResult.data || []);
       const rawPhotos = photoResult.data || [];
-      const paths = rawPhotos.map(p=>p.storage_path).filter(Boolean);
+      const internalPaths = rawPhotos
+        .map(p=>p.storage_path)
+        .filter(path=>path && !/^https?:\/\//i.test(path));
       let urls = [];
-      if (paths.length) {
-        const signed = await supabase.storage.from('tech-scout-notes').createSignedUrls(paths, 3600);
+      if (internalPaths.length) {
+        const signed = await supabase.storage.from('tech-scout-notes').createSignedUrls(internalPaths, 3600);
         if (!signed.error) urls = signed.data || [];
       }
-      const urlByPath = new Map(urls.map((item,index)=>[paths[index], item.signedUrl]));
-      setPhotos(rawPhotos.map(p=>({...p, signedUrl:urlByPath.get(p.storage_path)||''})));
+      const urlByPath = new Map(urls.map((item,index)=>[internalPaths[index], item.signedUrl]));
+      setPhotos(rawPhotos.map(p=>({
+        ...p,
+        signedUrl: /^https?:\/\//i.test(p.storage_path || '') ? p.storage_path : (urlByPath.get(p.storage_path)||'')
+      })));
       const queued = await listOfflineNotes();
       setPendingCount(queued.filter(item=>item.showId===show.id).length);
       setError('');

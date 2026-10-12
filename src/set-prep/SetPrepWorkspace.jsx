@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, BookOpen, CalendarDays, Camera, Check, ChevronDown, ChevronRight,
-  Circle, ClipboardList, FileText, MapPin, ParkingCircle, Pin, Search,
+  Circle, ClipboardList, FileText, MapPin, Pin, Search,
   ShieldCheck, Truck, Users, Wrench
 } from 'lucide-react';
 import { fetchMyToolAccess, fetchProductionCore, supabase } from '../supabase';
@@ -21,7 +21,7 @@ const STATUS_KEYS = [
 const SECTION_DEFS = [
   ['contacts','Contacts',Users],
   ['access','Access',MapPin],
-  ['parking','Parking',ParkingCircle],
+  ['parking','Parking',MapPin],
   ['permits','Permits',ShieldCheck],
   ['vendors','Vendors',Truck],
   ['prepNotes','Prep Notes',Wrench],

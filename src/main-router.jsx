@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import WaypointWorkspace from './waypoint/WaypointWorkspace';
 import CrewMapsWorkspace from './crew-maps/CrewMapsLockedEditor';
 import TechScoutWorkspace from './tech-scout/TechScoutWorkspace';
+import SetPrepWorkspace from './set-prep/SetPrepWorkspace';
 import './waypoint/waypoint-callout-polish.js';
 import './platform-brand-lock.css';
 import { configured, fetchShows, supabase } from './supabase';
@@ -11,6 +12,7 @@ const pathname = window.location.pathname;
 const isWaypointRoute = pathname === '/waypoint' || pathname.startsWith('/waypoint/');
 const isCrewMapsRoute = pathname === '/crew-maps' || pathname.startsWith('/crew-maps/');
 const isTechScoutRoute = pathname === '/tech-scout' || pathname.startsWith('/tech-scout/');
+const isSetPrepRoute = pathname === '/set-prep' || pathname.startsWith('/set-prep/');
 
 function ToolGate({tool}) {
   const [state, setState] = useState({ loading: true, show: null, error: '' });
@@ -25,19 +27,20 @@ function ToolGate({tool}) {
         const params = new URLSearchParams(window.location.search);
         const showId = params.get('showId') || params.get('show');
         const show = shows.find(item => item.id === showId) || shows[0] || null;
-        const toolLabel = tool === 'crew-maps' ? 'Crew Maps' : tool === 'tech-scout' ? 'Tech Scout Notes' : 'Waypoint';
+        const toolLabel = tool === 'crew-maps' ? 'Crew Maps' : tool === 'tech-scout' ? 'Tech Scout Notes' : tool === 'set-prep' ? 'Set Prep Folder' : 'Waypoint';
         if (!cancelled) setState({ loading: false, show, error: show ? '' : `No accessible show is available for ${toolLabel}.` });
       } catch (error) { if (!cancelled) setState({ loading: false, show: null, error: error?.message || String(error) }); }
     }
     load();
     return () => { cancelled = true; };
   }, [tool]);
-  const label = tool === 'crew-maps' ? 'Crew Maps' : tool === 'tech-scout' ? 'Tech Scout Notes' : 'Waypoint';
+  const label = tool === 'crew-maps' ? 'Crew Maps' : tool === 'tech-scout' ? 'Tech Scout Notes' : tool === 'set-prep' ? 'Set Prep Folder' : 'Waypoint';
   if (state.loading) return <div style={{height:'100vh',display:'grid',placeItems:'center',background:tool==='crew-maps'?'#f3f6f8':'#0b0f12',color:tool==='crew-maps'?'#203247':'#dfe5e3',fontFamily:'system-ui'}}>Loading {label}…</div>;
   if (state.error) return <div style={{height:'100vh',display:'grid',placeItems:'center',background:tool==='crew-maps'?'#f3f6f8':'#0b0f12',color:tool==='crew-maps'?'#203247':'#dfe5e3',fontFamily:'system-ui'}}><div><h2>{label}</h2><p>{state.error}</p><button onClick={()=>window.location.assign('/')}>Return to Taylor Scout</button></div></div>;
   const back = () => window.location.assign(`/?show=${encodeURIComponent(state.show.id)}&showId=${encodeURIComponent(state.show.id)}&showName=${encodeURIComponent(state.show.name || '')}`);
   if (tool === 'crew-maps') return <CrewMapsWorkspace show={state.show} onBack={back}/>;
   if (tool === 'tech-scout') return <TechScoutWorkspace show={state.show} onBack={back}/>;
+  if (tool === 'set-prep') return <SetPrepWorkspace show={state.show} onBack={back}/>;
   return <WaypointWorkspace show={state.show} onBack={back}/>;
 }
 
@@ -57,4 +60,5 @@ function installCrewMapsLinkGuard() {
 if (isWaypointRoute) createRoot(document.getElementById('root')).render(<ToolGate tool="waypoint" />);
 else if (isCrewMapsRoute) createRoot(document.getElementById('root')).render(<ToolGate tool="crew-maps" />);
 else if (isTechScoutRoute) createRoot(document.getElementById('root')).render(<ToolGate tool="tech-scout" />);
+else if (isSetPrepRoute) createRoot(document.getElementById('root')).render(<ToolGate tool="set-prep" />);
 else { installCrewMapsLinkGuard(); import('./main.jsx'); }

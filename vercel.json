@@ -5,6 +5,8 @@
     { "source": "/crew-maps", "destination": "/" },
     { "source": "/crew-maps/(.*)", "destination": "/" },
     { "source": "/tech-scout", "destination": "/" },
-    { "source": "/tech-scout/(.*)", "destination": "/" }
+    { "source": "/tech-scout/(.*)", "destination": "/" },
+    { "source": "/set-prep", "destination": "/" },
+    { "source": "/set-prep/(.*)", "destination": "/" }
   ]
 }

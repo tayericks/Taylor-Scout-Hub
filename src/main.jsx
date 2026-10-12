@@ -42,6 +42,11 @@ const APPS = [
     env: 'VITE_TECH_SCOUT_URL', fallback: '/tech-scout', status: 'Open tool'
   },
   {
+    key: 'set-prep', title: 'Set Prep Folder', icon: FileText,
+    description: 'Keep the working set binder: staffing, readiness, access, parking, permits, vendors, notes, photos, and documents.',
+    env: 'VITE_SET_PREP_URL', fallback: '/set-prep', status: 'Open tool'
+  },
+  {
     key: 'budget', title: 'Budget', icon: WalletCards,
     description: 'Create episode and set budgets, estimates, POs, commitments, and actuals.',
     env: 'VITE_BUDGET_URL', fallback: 'https://budget.taylorscout.com', status: 'Open tool'
@@ -66,7 +71,7 @@ const APPS = [
 const TOOL_PERMISSION_LABELS = {
   set_list: 'Set List', calendar: 'Calendar', scout_route: 'Scout Route',
   location_list: 'Location List', budget: 'Budget', bible: 'Bible',
-  waypoint: 'Waypoint', tech_scout: 'Tech Scout Notes', wrap_book: 'Wrap Book'
+  waypoint: 'Waypoint', tech_scout: 'Tech Scout Notes', set_prep: 'Set Prep Folder', wrap_book: 'Wrap Book'
 };
 
 function envUrl(name, fallback) {
@@ -78,6 +83,7 @@ function envUrl(name, fallback) {
     VITE_WAYPOINT_URL: import.meta.env.VITE_WAYPOINT_URL,
     VITE_CREW_MAPS_URL: import.meta.env.VITE_CREW_MAPS_URL,
     VITE_TECH_SCOUT_URL: import.meta.env.VITE_TECH_SCOUT_URL,
+    VITE_SET_PREP_URL: import.meta.env.VITE_SET_PREP_URL,
     VITE_BIBLE_URL: import.meta.env.VITE_BIBLE_URL,
   };
   return (map[name] || fallback || '').trim();
